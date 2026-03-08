@@ -188,9 +188,17 @@ class DangerAnalyzer:
         radius_meters: float,
     ) -> list[DangerZone]:
         """指定エリア内の危険ゾーンを取得する"""
+        # 緯度1度 ≈ 111km, 経度1度 ≈ 91km（日本の平均）
+        lat_range = radius_meters / 111000.0
+        lng_range = radius_meters / 91000.0
+
         result = await self.db.execute(
             select(DangerZone).where(
                 DangerZone.is_active == True,
+                DangerZone.latitude >= latitude - lat_range,
+                DangerZone.latitude <= latitude + lat_range,
+                DangerZone.longitude >= longitude - lng_range,
+                DangerZone.longitude <= longitude + lng_range,
                 (DangerZone.expires_at == None) |
                 (DangerZone.expires_at > datetime.now(timezone.utc)),
             )

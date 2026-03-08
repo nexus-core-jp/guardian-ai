@@ -39,8 +39,8 @@ class User(Base):
 
     # リレーション
     children: Mapped[list["Child"]] = relationship(
-        "Child", back_populates="parent", lazy="selectin"
+        "Child", back_populates="parent", lazy="select"
     )
     alerts: Mapped[list["Alert"]] = relationship(
-        "Alert", back_populates="user", lazy="selectin"
+        "Alert", back_populates="user", lazy="select"
     )

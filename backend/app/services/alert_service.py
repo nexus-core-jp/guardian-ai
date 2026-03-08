@@ -82,9 +82,9 @@ class AlertService:
 
         if existing_alert:
             # 5分以内の同じアラートは重複として無視
+            created_utc = existing_alert.created_at.astimezone(timezone.utc) if existing_alert.created_at.tzinfo else existing_alert.created_at.replace(tzinfo=timezone.utc)
             time_diff = (
-                datetime.now(timezone.utc)
-                - existing_alert.created_at.replace(tzinfo=timezone.utc)
+                datetime.now(timezone.utc) - created_utc
             ).total_seconds()
             if time_diff < 300:
                 return existing_alert

@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from geoalchemy2 import Geometry
 from sqlalchemy import String, Text, Boolean, DateTime, Enum, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -57,10 +56,6 @@ class Alert(Base):
     )
     title: Mapped[str] = mapped_column(String(200))
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    location = mapped_column(
-        Geometry(geometry_type="POINT", srid=4326), nullable=True,
-        comment="アラート発生地点"
-    )
     latitude: Mapped[float | None] = mapped_column(nullable=True)
     longitude: Mapped[float | None] = mapped_column(nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)

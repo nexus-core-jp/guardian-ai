@@ -3,8 +3,7 @@
 import uuid
 from datetime import datetime
 
-from geoalchemy2 import Geometry
-from sqlalchemy import String, Integer, DateTime, ForeignKey, func
+from sqlalchemy import String, Integer, Float, DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,9 +20,8 @@ class School(Base):
     )
     name: Mapped[str] = mapped_column(String(200), index=True)
     address: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    location = mapped_column(
-        Geometry(geometry_type="POINT", srid=4326), nullable=True
-    )
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     prefecture: Mapped[str | None] = mapped_column(String(50), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -32,7 +30,7 @@ class School(Base):
 
     # リレーション
     children: Mapped[list["Child"]] = relationship(
-        "Child", back_populates="school", lazy="selectin"
+        "Child", back_populates="school", lazy="select"
     )
 
 
@@ -68,11 +66,11 @@ class Child(Base):
     parent: Mapped["User"] = relationship("User", back_populates="children")
     school: Mapped["School | None"] = relationship("School", back_populates="children")
     locations: Mapped[list["Location"]] = relationship(
-        "Location", back_populates="child", lazy="selectin"
+        "Location", back_populates="child", lazy="select"
     )
     routes: Mapped[list["Route"]] = relationship(
-        "Route", back_populates="child", lazy="selectin"
+        "Route", back_populates="child", lazy="select"
     )
     alerts: Mapped[list["Alert"]] = relationship(
-        "Alert", back_populates="child", lazy="selectin"
+        "Alert", back_populates="child", lazy="select"
     )

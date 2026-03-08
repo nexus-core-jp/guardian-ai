@@ -5,7 +5,6 @@ import math
 from datetime import datetime, timezone
 from dataclasses import dataclass
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,7 +53,7 @@ class RouteEngine:
         school_id: uuid.UUID | None = None,
         time_of_day: str | None = None,
         avoid_danger_zones: bool = True,
-    ) -> RouteCalculateResponse | Route | None:
+    ) -> RouteCalculateResponse | None:
         """
         安全ルートを計算する。
 
@@ -76,10 +75,13 @@ class RouteEngine:
             school = await self._get_school(school_id)
             if school is None:
                 return None
-            # 学校の座標を使用（簡易実装）
-            # 本来はPostGIS geometryからST_X, ST_Yで取得
-            destination_lat = destination_lat or 35.6812  # デフォルト値（東京）
-            destination_lng = destination_lng or 139.7671
+            # 学校の座標を使用
+            if school.latitude is not None and school.longitude is not None:
+                destination_lat = school.latitude
+                destination_lng = school.longitude
+            else:
+                # 学校に座標が登録されていない場合
+                return None
 
         if destination_lat is None or destination_lng is None:
             return None
@@ -119,6 +121,11 @@ class RouteEngine:
             route = Route(
                 child_id=child_id,
                 name="通学路",
+                origin_lat=origin_lat,
+                origin_lng=origin_lng,
+                destination_lat=destination_lat,
+                destination_lng=destination_lng,
+                waypoints_json=[wp.model_dump() for wp in waypoints],
                 distance_meters=distance,
                 estimated_duration_minutes=estimated_minutes,
                 safety_score=safety_breakdown.overall,
@@ -196,6 +203,10 @@ class RouteEngine:
         result = await self.db.execute(
             select(DangerZone).where(
                 DangerZone.is_active == True,
+                DangerZone.latitude >= min_lat,
+                DangerZone.latitude <= max_lat,
+                DangerZone.longitude >= min_lng,
+                DangerZone.longitude <= max_lng,
                 (DangerZone.expires_at == None) |
                 (DangerZone.expires_at > datetime.now(timezone.utc)),
             )
@@ -207,8 +218,8 @@ class RouteEngine:
         for zone in zones:
             risk_factors.append(
                 RiskFactor(
-                    latitude=0.0,  # PostGIS geometryから取得する
-                    longitude=0.0,
+                    latitude=zone.latitude,
+                    longitude=zone.longitude,
                     risk_level=zone.risk_level,
                     risk_type=zone.risk_type,
                     radius_meters=zone.radius_meters or 100.0,

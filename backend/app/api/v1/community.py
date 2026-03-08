@@ -1,15 +1,14 @@
 """コミュニティ/地域見守りエンドポイント"""
 
-import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
-from app.models.danger_zone import DangerZone, RiskType, DangerZoneSource
+from app.models.danger_zone import DangerZone, DangerZoneSource
 from app.schemas.alert import (
     DangerZoneCreate,
     DangerZoneResponse,
@@ -42,6 +41,10 @@ async def list_danger_zones(
 
     query = select(DangerZone).where(
         DangerZone.is_active == True,
+        DangerZone.latitude >= latitude - lat_range,
+        DangerZone.latitude <= latitude + lat_range,
+        DangerZone.longitude >= longitude - lng_range,
+        DangerZone.longitude <= longitude + lng_range,
     )
 
     if risk_type:
@@ -54,14 +57,7 @@ async def list_danger_zones(
     )
 
     result = await db.execute(query.order_by(DangerZone.risk_level.desc()))
-    all_zones = result.scalars().all()
-
-    # アプリケーションレベルで距離フィルタ（PostGIS利用時はSQLで行う）
-    filtered_zones = []
-    for zone in all_zones:
-        # DangerZoneにはlat/lngカラムがないので、PostGIS POINT geometryから取得するか
-        # 簡易的にすべて返す
-        filtered_zones.append(zone)
+    filtered_zones = list(result.scalars().all())
 
     return DangerZoneListResponse(
         danger_zones=[DangerZoneResponse.model_validate(z) for z in filtered_zones],
@@ -84,6 +80,8 @@ async def report_danger_zone(
     コミュニティメンバーからの情報を収集し、地域全体の安全に役立てる。
     """
     danger_zone = DangerZone(
+        latitude=data.latitude,
+        longitude=data.longitude,
         risk_level=data.risk_level,
         risk_type=data.risk_type,
         title=data.title,
@@ -96,21 +94,7 @@ async def report_danger_zone(
     await db.flush()
     await db.refresh(danger_zone)
 
-    return DangerZoneResponse(
-        id=danger_zone.id,
-        latitude=data.latitude,
-        longitude=data.longitude,
-        radius_meters=danger_zone.radius_meters,
-        risk_level=danger_zone.risk_level,
-        risk_type=danger_zone.risk_type,
-        title=danger_zone.title,
-        description=danger_zone.description,
-        source=danger_zone.source,
-        reported_at=danger_zone.reported_at,
-        expires_at=danger_zone.expires_at,
-        is_active=danger_zone.is_active,
-        verified=danger_zone.verified,
-    )
+    return DangerZoneResponse.model_validate(danger_zone)
 
 
 @router.get("/heatmap", response_model=HeatmapResponse, summary="安全ヒートマップデータ")
@@ -125,10 +109,17 @@ async def get_safety_heatmap(
     指定エリアの安全ヒートマップデータを返す。
     危険エリアの情報を集約し、ヒートマップ表示用のデータを生成する。
     """
-    # 危険エリアを取得
+    # バウンディングボックスで危険エリアを取得
+    lat_range = radius_km / 111.0
+    lng_range = radius_km / 91.0
+
     result = await db.execute(
         select(DangerZone).where(
             DangerZone.is_active == True,
+            DangerZone.latitude >= latitude - lat_range,
+            DangerZone.latitude <= latitude + lat_range,
+            DangerZone.longitude >= longitude - lng_range,
+            DangerZone.longitude <= longitude + lng_range,
             (DangerZone.expires_at == None) |
             (DangerZone.expires_at > datetime.now(timezone.utc)),
         )
@@ -141,8 +132,8 @@ async def get_safety_heatmap(
         weight = min(zone.risk_level / 10.0, 1.0)
         points.append(
             HeatmapPoint(
-                latitude=latitude,  # 本来はgeometryから取得
-                longitude=longitude,
+                latitude=zone.latitude,
+                longitude=zone.longitude,
                 weight=weight,
                 risk_type=zone.risk_type,
             )

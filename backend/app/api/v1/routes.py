@@ -15,6 +15,8 @@ from app.schemas.route import (
     RouteCalculateResponse,
     RouteResponse,
     RouteListResponse,
+    RoutePoint,
+    RouteWaypoint,
 )
 from app.api.deps import get_current_user
 from app.services.route_engine import RouteEngine
@@ -63,12 +65,20 @@ async def get_recommended_route(
         if current_user.home_latitude and child.school_id:
             try:
                 engine = RouteEngine(db)
-                route = await engine.calculate_safe_route(
+                calc_result = await engine.calculate_safe_route(
                     origin_lat=current_user.home_latitude,
                     origin_lng=current_user.home_longitude,
                     child_id=child_id,
                     school_id=child.school_id,
                 )
+                if calc_result is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="推奨ルートの計算に失敗しました。学校の座標情報を確認してください。",
+                    )
+                return calc_result.route
+            except HTTPException:
+                raise
             except Exception:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -80,7 +90,22 @@ async def get_recommended_route(
                 detail="推奨ルートが見つかりません。オンボーディングを完了してください。",
             )
 
-    return RouteResponse.model_validate(route)
+    # Existing Route model needs to be converted to RouteResponse with origin/destination
+    return RouteResponse(
+        id=route.id,
+        child_id=route.child_id,
+        name=route.name,
+        origin=RoutePoint(latitude=route.origin_lat, longitude=route.origin_lng),
+        destination=RoutePoint(latitude=route.destination_lat, longitude=route.destination_lng),
+        waypoints=[RouteWaypoint(**wp) for wp in (route.waypoints_json or [])],
+        distance_meters=route.distance_meters,
+        estimated_duration_minutes=route.estimated_duration_minutes,
+        safety_score=route.safety_score,
+        is_recommended=route.is_recommended,
+        is_active=route.is_active,
+        created_at=route.created_at,
+        updated_at=route.updated_at,
+    )
 
 
 @router.get(
@@ -111,9 +136,27 @@ async def list_routes(
     )
     routes = routes_result.scalars().all()
 
+    route_responses = []
+    for r in routes:
+        route_responses.append(RouteResponse(
+            id=r.id,
+            child_id=r.child_id,
+            name=r.name,
+            origin=RoutePoint(latitude=r.origin_lat, longitude=r.origin_lng),
+            destination=RoutePoint(latitude=r.destination_lat, longitude=r.destination_lng),
+            waypoints=[RouteWaypoint(**wp) for wp in (r.waypoints_json or [])],
+            distance_meters=r.distance_meters,
+            estimated_duration_minutes=r.estimated_duration_minutes,
+            safety_score=r.safety_score,
+            is_recommended=r.is_recommended,
+            is_active=r.is_active,
+            created_at=r.created_at,
+            updated_at=r.updated_at,
+        ))
+
     return RouteListResponse(
-        routes=[RouteResponse.model_validate(r) for r in routes],
-        total=len(routes),
+        routes=route_responses,
+        total=len(route_responses),
     )
 
 

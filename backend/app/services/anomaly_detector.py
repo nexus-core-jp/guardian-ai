@@ -190,8 +190,9 @@ class AnomalyDetector:
                 prev.latitude, prev.longitude, latitude, longitude
             )
             # 前回からの距離が異常に大きい場合
+            prev_ts = prev.timestamp.astimezone(timezone.utc) if prev.timestamp.tzinfo else prev.timestamp.replace(tzinfo=timezone.utc)
             time_diff = (
-                datetime.now(timezone.utc) - prev.timestamp.replace(tzinfo=timezone.utc)
+                datetime.now(timezone.utc) - prev_ts
             ).total_seconds()
             if time_diff > 0 and distance_from_prev / time_diff > self.VEHICLE_SPEED_THRESHOLD:
                 return AnomalyResult(
@@ -241,8 +242,9 @@ class AnomalyDetector:
                 break
             stop_start = loc.timestamp
 
+        stop_start_utc = stop_start.astimezone(timezone.utc) if stop_start.tzinfo else stop_start.replace(tzinfo=timezone.utc)
         stop_duration = (
-            datetime.now(timezone.utc) - stop_start.replace(tzinfo=timezone.utc)
+            datetime.now(timezone.utc) - stop_start_utc
         ).total_seconds()
 
         if stop_duration >= self.STOP_DURATION_CRITICAL:

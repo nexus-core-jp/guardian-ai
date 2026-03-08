@@ -40,10 +40,16 @@ async def list_alerts(
     if is_read is not None:
         query = query.where(Alert.is_read == is_read)
 
-    # 総件数
+    # 総件数（同じフィルターを適用）
     count_query = select(func.count()).select_from(Alert).where(
         Alert.user_id == current_user.id
     )
+    if severity:
+        count_query = count_query.where(Alert.severity == severity)
+    if alert_type:
+        count_query = count_query.where(Alert.alert_type == alert_type)
+    if is_read is not None:
+        count_query = count_query.where(Alert.is_read == is_read)
     count_result = await db.execute(count_query)
     total = count_result.scalar() or 0
 
@@ -105,6 +111,37 @@ async def mark_alert_read(
         )
 
     alert.is_read = True
+    await db.flush()
+    await db.refresh(alert)
+
+    return AlertResponse.model_validate(alert)
+
+
+@router.put("/{alert_id}/resolve", response_model=AlertResponse, summary="アラートを解決済みにする")
+async def resolve_alert(
+    alert_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """指定したアラートを解決済みにする"""
+    from datetime import datetime, timezone
+
+    result = await db.execute(
+        select(Alert).where(
+            Alert.id == alert_id,
+            Alert.user_id == current_user.id,
+        )
+    )
+    alert = result.scalar_one_or_none()
+
+    if alert is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="アラートが見つかりません",
+        )
+
+    alert.is_resolved = True
+    alert.resolved_at = datetime.now(timezone.utc)
     await db.flush()
     await db.refresh(alert)
 

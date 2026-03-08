@@ -3,8 +3,7 @@
 import uuid
 from datetime import datetime
 
-from geoalchemy2 import Geometry
-from sqlalchemy import String, Float, Boolean, DateTime, ForeignKey, func
+from sqlalchemy import String, Float, Boolean, DateTime, ForeignKey, func, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,17 +22,20 @@ class Route(Base):
         UUID(as_uuid=True), ForeignKey("children.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(200), default="通学路")
-    origin = mapped_column(
-        Geometry(geometry_type="POINT", srid=4326), nullable=False,
-        comment="出発地点"
+    origin_lat: Mapped[float] = mapped_column(
+        Float, nullable=False, comment="出発地点の緯度"
     )
-    destination = mapped_column(
-        Geometry(geometry_type="POINT", srid=4326), nullable=False,
-        comment="目的地点"
+    origin_lng: Mapped[float] = mapped_column(
+        Float, nullable=False, comment="出発地点の経度"
     )
-    waypoints = mapped_column(
-        Geometry(geometry_type="LINESTRING", srid=4326), nullable=True,
-        comment="経由ポイント"
+    destination_lat: Mapped[float] = mapped_column(
+        Float, nullable=False, comment="目的地点の緯度"
+    )
+    destination_lng: Mapped[float] = mapped_column(
+        Float, nullable=False, comment="目的地点の経度"
+    )
+    waypoints_json: Mapped[list | None] = mapped_column(
+        JSON, nullable=True, comment="経由ポイント [{lat, lng, order, safety_score}]"
     )
     distance_meters: Mapped[float | None] = mapped_column(
         Float, nullable=True, comment="距離 (メートル)"

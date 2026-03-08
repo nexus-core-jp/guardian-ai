@@ -1,22 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { Colors } from '../../constants';
 import OnboardingProgress from '../../components/OnboardingProgress';
 import SchoolSearchInput from '../../components/SchoolSearchInput';
 import { schoolsApi } from '../../services/api';
+import { useOnboardingStore } from '../../stores/onboardingStore';
 import type { School } from '../../types';
 
 export default function SchoolSelectScreen() {
-  const params = useLocalSearchParams<{
-    homeLat: string;
-    homeLng: string;
-    homeAddress: string;
-  }>();
+  const onboarding = useOnboardingStore();
 
-  const homeLat = parseFloat(params.homeLat || '35.6812');
-  const homeLng = parseFloat(params.homeLng || '139.7671');
+  const homeLat = onboarding.homeLat || 35.6812;
+  const homeLng = onboarding.homeLng || 139.7671;
 
   const [nearbySchools, setNearbySchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,20 +35,15 @@ export default function SchoolSelectScreen() {
 
   const handleSelect = useCallback(
     (school: School) => {
-      router.push({
-        pathname: '/(onboarding)/gps-device',
-        params: {
-          homeLat: params.homeLat,
-          homeLng: params.homeLng,
-          homeAddress: params.homeAddress,
-          schoolId: school.id,
-          schoolName: school.name,
-          schoolLat: school.latitude.toString(),
-          schoolLng: school.longitude.toString(),
-        },
-      });
+      onboarding.setSchool(
+        school.id,
+        school.name,
+        school.latitude,
+        school.longitude
+      );
+      router.push('/(onboarding)/gps-device');
     },
-    [params]
+    [onboarding]
   );
 
   return (

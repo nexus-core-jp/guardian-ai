@@ -4,8 +4,7 @@ import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from geoalchemy2 import Geometry
-from sqlalchemy import String, Integer, Text, DateTime, Enum, ForeignKey, func
+from sqlalchemy import String, Integer, Float, Text, DateTime, Enum, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,13 +39,11 @@ class DangerZone(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    location = mapped_column(
-        Geometry(geometry_type="POINT", srid=4326), nullable=False,
-        comment="危険地点"
+    latitude: Mapped[float] = mapped_column(
+        Float, nullable=False, comment="危険地点の緯度"
     )
-    area = mapped_column(
-        Geometry(geometry_type="POLYGON", srid=4326), nullable=True,
-        comment="危険エリア範囲"
+    longitude: Mapped[float] = mapped_column(
+        Float, nullable=False, comment="危険地点の経度"
     )
     radius_meters: Mapped[float | None] = mapped_column(
         nullable=True, comment="影響半径 (メートル)"

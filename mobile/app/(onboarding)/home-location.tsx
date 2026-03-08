@@ -8,6 +8,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
@@ -16,13 +17,19 @@ import { router } from 'expo-router';
 import { Colors } from '../../constants';
 import OnboardingProgress from '../../components/OnboardingProgress';
 import { getCurrentLocation, reverseGeocode } from '../../services/location';
+import { useOnboardingStore } from '../../stores/onboardingStore';
 import type { HomeLocation } from '../../types';
 
+const GRADES = [1, 2, 3, 4, 5, 6];
+
 export default function HomeLocationScreen() {
+  const onboarding = useOnboardingStore();
   const [location, setLocation] = useState<HomeLocation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editAddress, setEditAddress] = useState('');
+  const [childName, setChildName] = useState(onboarding.childName);
+  const [childGrade, setChildGrade] = useState<number | undefined>(onboarding.childGrade);
 
   useEffect(() => {
     loadCurrentLocation();
@@ -59,20 +66,19 @@ export default function HomeLocationScreen() {
   };
 
   const handleConfirm = () => {
-    if (!location) return;
+    if (!location || !childName.trim()) return;
     const finalLocation = {
       ...location,
       address: isEditing ? editAddress : location.address,
     };
-    // Store in params for next screens
-    router.push({
-      pathname: '/(onboarding)/school-select',
-      params: {
-        homeLat: finalLocation.latitude.toString(),
-        homeLng: finalLocation.longitude.toString(),
-        homeAddress: finalLocation.address,
-      },
-    });
+    // Store in onboarding store
+    onboarding.setHomeLocation(
+      finalLocation.latitude,
+      finalLocation.longitude,
+      finalLocation.address
+    );
+    onboarding.setChild(childName.trim(), childGrade);
+    router.push('/(onboarding)/school-select');
   };
 
   if (isLoading) {
@@ -93,10 +99,42 @@ export default function HomeLocationScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <OnboardingProgress currentStep={0} totalSteps={4} />
-        <Text style={styles.title}>自宅の場所を確認</Text>
+        <Text style={styles.title}>お子さまの情報</Text>
         <Text style={styles.description}>
-          お子様の通学ルートを計算するために{'\n'}ご自宅の場所を設定してください
+          お子様のお名前と自宅の場所を{'\n'}設定してください
         </Text>
+
+        {/* Child info section */}
+        <View style={styles.childInfoSection}>
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>お子さんのお名前</Text>
+            <TextInput
+              style={styles.nameInput}
+              value={childName}
+              onChangeText={setChildName}
+              placeholder="例: たろう"
+              placeholderTextColor={Colors.textTertiary}
+            />
+          </View>
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>学年</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gradeScroll}>
+              <View style={styles.gradeRow}>
+                {GRADES.map((g) => (
+                  <TouchableOpacity
+                    key={g}
+                    style={[styles.gradeChip, childGrade === g && styles.gradeChipSelected]}
+                    onPress={() => setChildGrade(g)}
+                  >
+                    <Text style={[styles.gradeText, childGrade === g && styles.gradeTextSelected]}>
+                      {g}年
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
 
         {/* Map */}
         <View style={styles.mapContainer}>
@@ -162,11 +200,12 @@ export default function HomeLocationScreen() {
         {/* Confirm button */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.confirmButton}
+            style={[styles.confirmButton, !childName.trim() && styles.buttonDisabled]}
             onPress={handleConfirm}
             activeOpacity={0.8}
+            disabled={!childName.trim()}
           >
-            <Text style={styles.confirmButtonText}>ここが自宅です</Text>
+            <Text style={styles.confirmButtonText}>次へ</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -204,7 +243,58 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  childInfoSection: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    gap: 10,
+  },
+  inputRow: {
+    gap: 4,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  nameInput: {
+    fontSize: 15,
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: Colors.grayUltraLight,
+  },
+  gradeScroll: {
+    flexGrow: 0,
+  },
+  gradeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  gradeChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.grayUltraLight,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  gradeChipSelected: {
+    backgroundColor: Colors.primaryLight,
+    borderColor: Colors.primary,
+  },
+  gradeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  gradeTextSelected: {
+    color: Colors.primary,
   },
   mapContainer: {
     flex: 1,
@@ -232,7 +322,7 @@ const styles = StyleSheet.create({
   },
   addressSection: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 12,
     alignItems: 'center',
   },
   addressDisplay: {
@@ -273,7 +363,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingHorizontal: 24,
-    paddingVertical: 20,
+    paddingVertical: 16,
   },
   confirmButton: {
     backgroundColor: Colors.primary,
@@ -285,5 +375,8 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: Colors.white,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
 });

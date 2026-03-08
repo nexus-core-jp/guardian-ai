@@ -8,31 +8,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { Colors, GPS_DEVICES } from '../../constants';
 import OnboardingProgress from '../../components/OnboardingProgress';
+import { useOnboardingStore } from '../../stores/onboardingStore';
 
 export default function GpsDeviceScreen() {
-  const params = useLocalSearchParams<{
-    homeLat: string;
-    homeLng: string;
-    homeAddress: string;
-    schoolId: string;
-    schoolName: string;
-    schoolLat: string;
-    schoolLng: string;
-  }>();
-
+  const onboarding = useOnboardingStore();
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
 
   const handleNext = (deviceId?: string) => {
-    router.push({
-      pathname: '/(onboarding)/complete',
-      params: {
-        ...params,
-        gpsDevice: deviceId || selectedDevice || 'none',
-      },
-    });
+    onboarding.setGpsDevice(deviceId || selectedDevice || 'none');
+    router.push('/(onboarding)/complete');
   };
 
   return (

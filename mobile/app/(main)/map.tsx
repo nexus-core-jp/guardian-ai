@@ -10,12 +10,16 @@ import { useSafeRoute } from '../../hooks/useSafeRoute';
 import { communityApi } from '../../services/api';
 import { getCurrentLocation } from '../../services/location';
 import type { DangerZone } from '../../types';
-import { useAuthStore } from '../../stores/authStore';
+import { useChildStore } from '../../stores/childStore';
 
 export default function MapScreen() {
-  const user = useAuthStore((s) => s.user);
-  // In production, childId would come from the user's children list
-  const [childId] = useState<string | undefined>(undefined);
+  const { activeChildId, initialize: initChildren } = useChildStore();
+
+  useEffect(() => {
+    initChildren();
+  }, []);
+
+  const childId = activeChildId;
   const { location: childLocation, isLoading: isLocationLoading } = useChildLocation(childId);
   const { route } = useSafeRoute(childId);
   const [dangerZones, setDangerZones] = useState<DangerZone[]>([]);

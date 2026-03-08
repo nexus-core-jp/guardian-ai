@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Circle, Heatmap, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { Circle, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, DANGER_TYPES } from '../../constants';
 import DangerReportCard from '../../components/DangerReportCard';
 import { communityApi } from '../../services/api';
@@ -98,11 +98,10 @@ export default function CommunityScreen() {
     }
   };
 
-  const heatmapPoints = dangerZones.map((z) => ({
-    latitude: z.latitude,
-    longitude: z.longitude,
-    weight: z.confirmCount + 1,
-  }));
+  const getDensityRadius = (confirmCount: number): number => {
+    // More confirmations = larger circle
+    return Math.min(150, 50 + confirmCount * 20);
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -150,18 +149,16 @@ export default function CommunityScreen() {
               longitudeDelta: 0.02,
             }}
           >
-            {Platform.OS === 'ios' && heatmapPoints.length > 0 && (
-              <Heatmap
-                points={heatmapPoints}
-                radius={40}
-                opacity={0.7}
-                gradient={{
-                  colors: [Colors.warning, Colors.danger],
-                  startPoints: [0.2, 1.0],
-                  colorMapSize: 256,
-                }}
+            {dangerZones.map((zone) => (
+              <Circle
+                key={`density-${zone.id}`}
+                center={{ latitude: zone.latitude, longitude: zone.longitude }}
+                radius={getDensityRadius(zone.confirmCount)}
+                strokeColor="transparent"
+                fillColor={Colors.danger + '30'}
+                strokeWidth={0}
               />
-            )}
+            ))}
             {dangerZones.map((zone) => (
               <Circle
                 key={zone.id}

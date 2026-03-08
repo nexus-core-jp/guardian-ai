@@ -5,39 +5,32 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { Colors } from '../../constants';
 import OnboardingProgress from '../../components/OnboardingProgress';
 import SafeRouteMap from '../../components/SafeRouteMap';
 import RiskBadge from '../../components/RiskBadge';
 import { onboardingApi, routesApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { useOnboardingStore } from '../../stores/onboardingStore';
 import type { SafeRoute } from '../../types';
 
 export default function CompleteScreen() {
-  const params = useLocalSearchParams<{
-    homeLat: string;
-    homeLng: string;
-    homeAddress: string;
-    schoolId: string;
-    schoolName: string;
-    schoolLat: string;
-    schoolLng: string;
-    gpsDevice: string;
-  }>();
+  const onboarding = useOnboardingStore();
 
   const [route, setRoute] = useState<SafeRoute | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const setOnboarded = useAuthStore((s) => s.setOnboarded);
 
-  const homeLat = parseFloat(params.homeLat || '0');
-  const homeLng = parseFloat(params.homeLng || '0');
-  const schoolLat = parseFloat(params.schoolLat || '0');
-  const schoolLng = parseFloat(params.schoolLng || '0');
+  const homeLat = onboarding.homeLat;
+  const homeLng = onboarding.homeLng;
+  const schoolLat = onboarding.schoolLat;
+  const schoolLng = onboarding.schoolLng;
 
   useEffect(() => {
     calculateRoute();
@@ -63,18 +56,24 @@ export default function CompleteScreen() {
       await onboardingApi.complete({
         homeLatitude: homeLat,
         homeLongitude: homeLng,
-        homeAddress: params.homeAddress || '',
-        schoolId: params.schoolId || '',
-        gpsDeviceType: params.gpsDevice !== 'none' ? params.gpsDevice : undefined,
-        childName: '',
-        childGrade: undefined,
+        homeAddress: onboarding.homeAddress,
+        schoolId: onboarding.schoolId,
+        gpsDeviceType: onboarding.gpsDevice !== 'none' ? onboarding.gpsDevice : undefined,
+        childName: onboarding.childName,
+        childGrade: onboarding.childGrade,
       });
       setOnboarded(true);
+      onboarding.reset();
       router.replace('/(main)/map');
-    } catch {
-      // Try navigating anyway
-      setOnboarded(true);
-      router.replace('/(main)/map');
+    } catch (error) {
+      Alert.alert(
+        'エラー',
+        error instanceof Error ? error.message : '設定の保存に失敗しました。',
+        [
+          { text: '再試行', onPress: () => handleStart() },
+          { text: 'キャンセル', style: 'cancel' },
+        ]
+      );
     } finally {
       setIsSaving(false);
     }
@@ -90,7 +89,7 @@ export default function CompleteScreen() {
         </View>
         <Text style={styles.title}>設定完了!</Text>
         <Text style={styles.schoolName}>
-          {params.schoolName || '学校'}への通学ルート
+          {onboarding.schoolName || '学校'}への通学ルート
         </Text>
       </View>
 

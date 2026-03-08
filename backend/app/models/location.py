@@ -4,8 +4,7 @@ import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from geoalchemy2 import Geometry
-from sqlalchemy import String, Float, DateTime, ForeignKey, Enum, func
+from sqlalchemy import Float, DateTime, ForeignKey, Enum, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,9 +31,6 @@ class Location(Base):
     )
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
-    point = mapped_column(
-        Geometry(geometry_type="POINT", srid=4326), nullable=True
-    )
     altitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     speed: Mapped[float | None] = mapped_column(
         Float, nullable=True, comment="移動速度 (m/s)"

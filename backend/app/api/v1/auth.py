@@ -1,7 +1,5 @@
 """認証エンドポイント（LINE ログイン）"""
 
-import uuid
-
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -100,6 +98,20 @@ async def line_login(
     )
 
 
+@router.get("/line/callback", response_model=TokenResponse, summary="LINE OAuth コールバック")
+async def line_callback(
+    code: str,
+    state: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    LINE OAuthリダイレクト先のコールバックエンドポイント。
+    認証コードを受け取り、ログイン処理を行う。
+    """
+    request = LINELoginRequest(code=code, state=state)
+    return await line_login(request=request, db=db)
+
+
 @router.post("/onboarding", response_model=OnboardingResponse, summary="初期セットアップ")
 async def onboarding(
     request: OnboardingRequest,
@@ -137,7 +149,7 @@ async def onboarding(
                 school_id=request.school_id,
             )
             if route:
-                recommended_route_id = route.id
+                recommended_route_id = route.route.id
         except Exception:
             # ルート計算失敗は無視（後で再計算可能）
             pass

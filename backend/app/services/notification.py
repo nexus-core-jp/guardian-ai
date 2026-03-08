@@ -1,5 +1,6 @@
 """プッシュ通知サービス (Firebase Cloud Messaging)"""
 
+import asyncio
 import uuid
 import logging
 from pathlib import Path
@@ -128,7 +129,7 @@ class NotificationService:
                 ),
             )
 
-            response = messaging.send(message)
+            response = await asyncio.to_thread(messaging.send, message)
             logger.info(f"通知送信成功: {response}")
             return True
 
