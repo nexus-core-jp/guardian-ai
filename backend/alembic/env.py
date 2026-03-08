@@ -42,8 +42,25 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def include_object(object, name, type_, reflected, compare_to):
+    """PostGISの内蔵テーブル・スキーマを除外する"""
+    if type_ == "table" and name in (
+        "spatial_ref_sys", "geometry_columns", "geography_columns",
+        "raster_columns", "raster_overviews", "layer", "topology",
+    ):
+        return False
+    # tiger/topology スキーマのテーブルを除外
+    if type_ == "table" and reflected and compare_to is None:
+        return False
+    return True
+
+
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
 
     with context.begin_transaction():
         context.run_migrations()

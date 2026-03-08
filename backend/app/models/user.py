@@ -29,6 +29,7 @@ class User(Base):
     fcm_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
     home_latitude: Mapped[float | None] = mapped_column(nullable=True)
     home_longitude: Mapped[float | None] = mapped_column(nullable=True)
+    onboarding_completed: Mapped[bool] = mapped_column(default=False)
     is_active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
