@@ -1,0 +1,52 @@
+"""Guardian AI - 子どもの安全を見守るAIプラットフォーム"""
+
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.config import get_settings
+from app.database import init_db, close_db
+from app.api.v1.router import v1_router
+
+settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """アプリケーションのライフサイクル管理"""
+    # 起動時
+    await init_db()
+    yield
+    # 終了時
+    await close_db()
+
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="子どもの安全を見守るAIプラットフォーム",
+    lifespan=lifespan,
+)
+
+# CORS設定
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# v1ルーターをマウント
+app.include_router(v1_router, prefix="/api/v1")
+
+
+@app.get("/health", tags=["ヘルスチェック"])
+async def health_check():
+    """ヘルスチェックエンドポイント"""
+    return {
+        "status": "ok",
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+    }

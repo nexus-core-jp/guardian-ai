@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Guardian AI",
+    "slug": "guardian-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "guardian-ai",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4A90D9"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.guardianai.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "お子様の安全を見守るために位置情報を使用します",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "お子様の安全を見守るために位置情報を使用します"
+      }
+    },
+    "android": {
+      "package": "com.guardianai.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#4A90D9",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "お子様の安全を見守るために位置情報を使用します"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
+      ]
+    ]
+  }
+}

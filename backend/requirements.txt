@@ -1,0 +1,33 @@
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+geoalchemy2==0.15.2
+alembic==1.14.0
+
+# Settings
+pydantic-settings==2.7.0
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# HTTP client
+httpx==0.28.1
+
+# Redis
+redis==5.2.1
+
+# Firebase (push notifications)
+firebase-admin==6.6.0
+
+# Geospatial
+shapely==2.0.6
+geopy==2.4.1
+
+# Utilities
+python-multipart==0.0.19
+python-dotenv==1.0.1

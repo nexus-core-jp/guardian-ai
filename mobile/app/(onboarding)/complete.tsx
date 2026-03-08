@@ -1,0 +1,244 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Colors } from '../../constants';
+import OnboardingProgress from '../../components/OnboardingProgress';
+import SafeRouteMap from '../../components/SafeRouteMap';
+import RiskBadge from '../../components/RiskBadge';
+import { onboardingApi, routesApi } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
+import type { SafeRoute } from '../../types';
+
+export default function CompleteScreen() {
+  const params = useLocalSearchParams<{
+    homeLat: string;
+    homeLng: string;
+    homeAddress: string;
+    schoolId: string;
+    schoolName: string;
+    schoolLat: string;
+    schoolLng: string;
+    gpsDevice: string;
+  }>();
+
+  const [route, setRoute] = useState<SafeRoute | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const setOnboarded = useAuthStore((s) => s.setOnboarded);
+
+  const homeLat = parseFloat(params.homeLat || '0');
+  const homeLng = parseFloat(params.homeLng || '0');
+  const schoolLat = parseFloat(params.schoolLat || '0');
+  const schoolLng = parseFloat(params.schoolLng || '0');
+
+  useEffect(() => {
+    calculateRoute();
+  }, []);
+
+  const calculateRoute = async () => {
+    try {
+      const data = await routesApi.calculateRoute(
+        { lat: homeLat, lng: homeLng },
+        { lat: schoolLat, lng: schoolLng }
+      );
+      setRoute(data);
+    } catch {
+      // Show map without route
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStart = async () => {
+    setIsSaving(true);
+    try {
+      await onboardingApi.complete({
+        homeLatitude: homeLat,
+        homeLongitude: homeLng,
+        homeAddress: params.homeAddress || '',
+        schoolId: params.schoolId || '',
+        gpsDeviceType: params.gpsDevice !== 'none' ? params.gpsDevice : undefined,
+        childName: '',
+        childGrade: undefined,
+      });
+      setOnboarded(true);
+      router.replace('/(main)/map');
+    } catch {
+      // Try navigating anyway
+      setOnboarded(true);
+      router.replace('/(main)/map');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <OnboardingProgress currentStep={3} totalSteps={4} />
+
+      <View style={styles.header}>
+        <View style={styles.successIcon}>
+          <Ionicons name="checkmark-circle" size={48} color={Colors.safe} />
+        </View>
+        <Text style={styles.title}>設定完了!</Text>
+        <Text style={styles.schoolName}>
+          {params.schoolName || '学校'}への通学ルート
+        </Text>
+      </View>
+
+      {/* Route map */}
+      <View style={styles.mapContainer}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>最適なルートを計算中...</Text>
+          </View>
+        ) : (
+          <>
+            <SafeRouteMap
+              safeRoute={route}
+              initialRegion={{
+                latitude: (homeLat + schoolLat) / 2,
+                longitude: (homeLng + schoolLng) / 2,
+                latitudeDelta: Math.abs(homeLat - schoolLat) * 1.8 + 0.005,
+                longitudeDelta: Math.abs(homeLng - schoolLng) * 1.8 + 0.005,
+              }}
+              style={styles.map}
+            />
+            {route && (
+              <View style={styles.routeInfo}>
+                <View style={styles.routeInfoRow}>
+                  <Ionicons name="walk" size={18} color={Colors.textSecondary} />
+                  <Text style={styles.routeInfoText}>
+                    徒歩 約{route.estimatedWalkMinutes}分
+                  </Text>
+                </View>
+                <RiskBadge level={route.overallRiskLevel} size="small" />
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
+      <Text style={styles.message}>
+        明日の朝、最適なルートをお知らせします
+      </Text>
+
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.startButton, isSaving && styles.buttonDisabled]}
+          onPress={handleStart}
+          disabled={isSaving}
+          activeOpacity={0.8}
+        >
+          {isSaving ? (
+            <ActivityIndicator color={Colors.white} />
+          ) : (
+            <Text style={styles.startButtonText}>はじめる</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  successIcon: {
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: Colors.text,
+    marginBottom: 6,
+  },
+  schoolName: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+  },
+  mapContainer: {
+    flex: 1,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    position: 'relative',
+  },
+  map: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  routeInfo: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.white + 'F0',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  routeInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  routeInfoText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  message: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
+  buttonContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+  },
+  startButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    paddingVertical: 18,
+    alignItems: 'center',
+  },
+  startButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+});

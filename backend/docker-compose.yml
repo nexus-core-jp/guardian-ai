@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  # PostgreSQL + PostGIS
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: guardian-ai-db
+    environment:
+      POSTGRES_USER: guardian
+      POSTGRES_PASSWORD: guardian
+      POSTGRES_DB: guardian_ai
+    ports:
+      - "5434:5432"
+    volumes:
+      - guardian_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guardian -d guardian_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: guardian-ai-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - guardian_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI アプリケーション
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: guardian-ai-api
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://guardian:guardian@db:5432/guardian_ai
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      LINE_CHANNEL_ID: ${LINE_CHANNEL_ID:-}
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET:-}
+      FCM_CREDENTIALS_PATH: ${FCM_CREDENTIALS_PATH:-}
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:-}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      DEBUG: "true"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  guardian_pgdata:
+  guardian_redis_data:
