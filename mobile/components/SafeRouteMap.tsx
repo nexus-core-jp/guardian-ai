@@ -1,8 +1,23 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
-import MapView, { Marker, Polyline, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Colors } from '../constants';
 import type { SafeRoute, ChildLocation, DangerZone, RoutePoint } from '../types';
+import MapPlaceholder from './MapPlaceholder';
+
+let MapView: any = null;
+let Marker: any = null;
+let Polyline: any = null;
+let Circle: any = null;
+let PROVIDER_DEFAULT: any = null;
+
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+  Polyline = Maps.Polyline;
+  Circle = Maps.Circle;
+  PROVIDER_DEFAULT = Maps.PROVIDER_DEFAULT;
+}
 
 interface Props {
   safeRoute?: SafeRoute | null;
@@ -70,6 +85,10 @@ export default function SafeRouteMap({
     latitudeDelta: 0.015,
     longitudeDelta: 0.015,
   };
+
+  if (Platform.OS === 'web' || !MapView) {
+    return <MapPlaceholder style={style} />;
+  }
 
   return (
     <View style={[styles.container, style]}>

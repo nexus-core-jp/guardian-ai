@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,15 +31,30 @@ export default function LoginScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-      const data = await response.json();
-      await login(data.user, data.access_token, data.access_token);
-      if (data.user.onboarding_completed) {
-        router.replace('/(main)/map');
-      } else {
-        router.replace('/(onboarding)/home-location');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
+      const data = await response.json();
+      // バックエンドはsnake_case、フロントはcamelCaseなので変換
+      const user = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        lineId: data.user.line_id,
+        avatarUrl: data.user.avatar_url,
+        onboardingCompleted: data.user.onboarding_completed,
+        createdAt: data.user.created_at,
+        updatedAt: data.user.updated_at,
+      };
+      await login(user, data.access_token, data.access_token);
+      // _layout.tsx の Redirect が自動的にナビゲーションを処理する
     } catch (error) {
-      Alert.alert('開発ログインエラー', error instanceof Error ? error.message : 'エラーが発生しました');
+      const msg = error instanceof Error ? error.message : 'エラーが発生しました';
+      if (Platform.OS === 'web') {
+        window.alert(`開発ログインエラー: ${msg}`);
+      } else {
+        Alert.alert('開発ログインエラー', msg);
+      }
     } finally {
       setIsLoading(false);
     }

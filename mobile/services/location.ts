@@ -1,8 +1,14 @@
-import * as ExpoLocation from 'expo-location';
+import { Platform } from 'react-native';
 import { WS_URL } from '../constants';
 import type { ChildLocation, Location } from '../types';
 
+let ExpoLocation: typeof import('expo-location') | null = null;
+if (Platform.OS !== 'web') {
+  ExpoLocation = require('expo-location');
+}
+
 export async function requestLocationPermission(): Promise<boolean> {
+  if (!ExpoLocation) return false;
   const { status: foregroundStatus } = await ExpoLocation.requestForegroundPermissionsAsync();
   if (foregroundStatus !== 'granted') {
     return false;
@@ -11,17 +17,41 @@ export async function requestLocationPermission(): Promise<boolean> {
 }
 
 export async function requestBackgroundLocationPermission(): Promise<boolean> {
+  if (!ExpoLocation) return false;
   const { status } = await ExpoLocation.requestBackgroundPermissionsAsync();
   return status === 'granted';
 }
 
 export async function getCurrentLocation(): Promise<Location | null> {
+  if (Platform.OS === 'web') {
+    // Web: use browser geolocation API
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy ?? undefined,
+            timestamp: new Date(pos.timestamp).toISOString(),
+            source: 'app',
+          });
+        },
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+  }
+
   try {
     const hasPermission = await requestLocationPermission();
     if (!hasPermission) return null;
 
-    const location = await ExpoLocation.getCurrentPositionAsync({
-      accuracy: ExpoLocation.Accuracy.High,
+    const location = await ExpoLocation!.getCurrentPositionAsync({
+      accuracy: ExpoLocation!.Accuracy.High,
     });
 
     return {
@@ -40,6 +70,9 @@ export async function reverseGeocode(
   latitude: number,
   longitude: number
 ): Promise<string> {
+  if (!ExpoLocation) {
+    return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+  }
   try {
     const results = await ExpoLocation.reverseGeocodeAsync({ latitude, longitude });
     if (results.length > 0) {

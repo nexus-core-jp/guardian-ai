@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { getItem, setItem, deleteItem } from './storage';
 import { API_URL } from '../constants';
 import type {
   LoginResponse,
@@ -24,7 +24,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-  const token = await SecureStore.getItemAsync('accessToken');
+  const token = await getItem('accessToken');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -39,23 +39,23 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        const refreshToken = await getItem('refreshToken');
         if (refreshToken) {
           const { data } = await axios.post<{ accessToken: string; refreshToken: string }>(
             `${API_URL}/auth/refresh`,
             { refreshToken }
           );
-          await SecureStore.setItemAsync('accessToken', data.accessToken);
-          await SecureStore.setItemAsync('refreshToken', data.refreshToken);
+          await setItem('accessToken', data.accessToken);
+          await setItem('refreshToken', data.refreshToken);
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
           }
           return api(originalRequest);
         }
       } catch {
-        await SecureStore.deleteItemAsync('accessToken');
-        await SecureStore.deleteItemAsync('refreshToken');
-        await SecureStore.deleteItemAsync('user');
+        await deleteItem('accessToken');
+        await deleteItem('refreshToken');
+        await deleteItem('user');
       }
     }
 

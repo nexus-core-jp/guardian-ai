@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import { getItem, setItem, deleteItem } from '../services/storage';
 import type { User } from '../types';
 
 interface AuthState {
@@ -35,9 +35,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   login: async (user, accessToken, refreshToken) => {
-    await SecureStore.setItemAsync('accessToken', accessToken);
-    await SecureStore.setItemAsync('refreshToken', refreshToken);
-    await SecureStore.setItemAsync('user', JSON.stringify(user));
+    await setItem('accessToken', accessToken);
+    await setItem('refreshToken', refreshToken);
+    await setItem('user', JSON.stringify(user));
     set({
       user,
       accessToken,
@@ -48,9 +48,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    await SecureStore.deleteItemAsync('accessToken');
-    await SecureStore.deleteItemAsync('refreshToken');
-    await SecureStore.deleteItemAsync('user');
+    await deleteItem('accessToken');
+    await deleteItem('refreshToken');
+    await deleteItem('user');
     set({
       user: null,
       accessToken: null,
@@ -62,9 +62,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   loadStoredAuth: async () => {
     try {
-      const accessToken = await SecureStore.getItemAsync('accessToken');
-      const refreshToken = await SecureStore.getItemAsync('refreshToken');
-      const userStr = await SecureStore.getItemAsync('user');
+      const accessToken = await getItem('accessToken');
+      const refreshToken = await getItem('refreshToken');
+      const userStr = await getItem('user');
 
       if (accessToken && refreshToken && userStr) {
         const user = JSON.parse(userStr) as User;
@@ -88,7 +88,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get();
     if (user) {
       const updatedUser = { ...user, onboardingCompleted: value };
-      SecureStore.setItemAsync('user', JSON.stringify(updatedUser));
+      setItem('user', JSON.stringify(updatedUser));
       set({ user: updatedUser, isOnboarded: value });
     }
   },

@@ -1,20 +1,35 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { notificationsApi } from './api';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Web ではプッシュ通知APIを使わない
+const isNative = Platform.OS !== 'web';
+
+let Notifications: typeof import('expo-notifications') | null = null;
+let Device: typeof import('expo-device') | null = null;
+let Constants: typeof import('expo-constants').default | null = null;
+
+if (isNative) {
+  Notifications = require('expo-notifications');
+  Device = require('expo-device');
+  Constants = require('expo-constants').default;
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
+
+// ダミーのサブスクリプション（Web用）
+const dummySubscription = { remove: () => {} };
 
 export async function registerForPushNotifications(): Promise<string | null> {
+  if (!isNative || !Notifications || !Device || !Constants) return null;
+
   if (!Device.isDevice) {
     console.log('Push notifications require a physical device');
     return null;
@@ -67,21 +82,25 @@ export async function registerForPushNotifications(): Promise<string | null> {
 }
 
 export function addNotificationReceivedListener(
-  handler: (notification: Notifications.Notification) => void
-): Notifications.EventSubscription {
+  handler: (notification: any) => void
+): { remove: () => void } {
+  if (!isNative || !Notifications) return dummySubscription;
   return Notifications.addNotificationReceivedListener(handler);
 }
 
 export function addNotificationResponseListener(
-  handler: (response: Notifications.NotificationResponse) => void
-): Notifications.EventSubscription {
+  handler: (response: any) => void
+): { remove: () => void } {
+  if (!isNative || !Notifications) return dummySubscription;
   return Notifications.addNotificationResponseReceivedListener(handler);
 }
 
 export async function getBadgeCount(): Promise<number> {
+  if (!isNative || !Notifications) return 0;
   return Notifications.getBadgeCountAsync();
 }
 
 export async function setBadgeCount(count: number): Promise<void> {
+  if (!isNative || !Notifications) return;
   await Notifications.setBadgeCountAsync(count);
 }

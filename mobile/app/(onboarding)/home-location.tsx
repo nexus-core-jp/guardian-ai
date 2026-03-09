@@ -11,8 +11,19 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
+import MapPlaceholder from '../../components/MapPlaceholder';
+
+let MapView: any = null;
+let Marker: any = null;
+let PROVIDER_DEFAULT: any = null;
+
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+  PROVIDER_DEFAULT = Maps.PROVIDER_DEFAULT;
+}
 import { router } from 'expo-router';
 import { Colors } from '../../constants';
 import OnboardingProgress from '../../components/OnboardingProgress';
@@ -138,32 +149,36 @@ export default function HomeLocationScreen() {
 
         {/* Map */}
         <View style={styles.mapContainer}>
-          {location && (
-            <MapView
-              style={styles.map}
-              provider={PROVIDER_DEFAULT}
-              initialRegion={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
-              }}
-              onPress={handleMapPress}
-              showsUserLocation
-            >
-              <Marker
-                coordinate={{
+          {Platform.OS === 'web' || !MapView ? (
+            <MapPlaceholder message="地図はモバイルアプリで操作できます" />
+          ) : (
+            location && (
+              <MapView
+                style={styles.map}
+                provider={PROVIDER_DEFAULT}
+                initialRegion={{
                   latitude: location.latitude,
                   longitude: location.longitude,
+                  latitudeDelta: 0.005,
+                  longitudeDelta: 0.005,
                 }}
-                draggable
-                onDragEnd={(e) => handleMapPress(e)}
+                onPress={handleMapPress}
+                showsUserLocation
               >
-                <View style={styles.markerContainer}>
-                  <Ionicons name="home" size={22} color={Colors.white} />
-                </View>
-              </Marker>
-            </MapView>
+                <Marker
+                  coordinate={{
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                  }}
+                  draggable
+                  onDragEnd={(e: any) => handleMapPress(e)}
+                >
+                  <View style={styles.markerContainer}>
+                    <Ionicons name="home" size={22} color={Colors.white} />
+                  </View>
+                </Marker>
+              </MapView>
+            )
           )}
         </View>
 

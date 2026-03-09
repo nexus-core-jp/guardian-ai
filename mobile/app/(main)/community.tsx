@@ -14,8 +14,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Circle, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, DANGER_TYPES } from '../../constants';
+import MapPlaceholder from '../../components/MapPlaceholder';
+
+let MapView: any = null;
+let Circle: any = null;
+let PROVIDER_DEFAULT: any = null;
+
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Circle = Maps.Circle;
+  PROVIDER_DEFAULT = Maps.PROVIDER_DEFAULT;
+}
 import DangerReportCard from '../../components/DangerReportCard';
 import { communityApi } from '../../services/api';
 import { getCurrentLocation } from '../../services/location';
@@ -141,37 +152,41 @@ export default function CommunityScreen() {
       ) : viewMode === 'map' ? (
         /* Heatmap view */
         <View style={styles.mapContainer}>
-          <MapView
-            style={styles.map}
-            provider={PROVIDER_DEFAULT}
-            initialRegion={{
-              latitude: currentLat,
-              longitude: currentLng,
-              latitudeDelta: 0.02,
-              longitudeDelta: 0.02,
-            }}
-          >
-            {dangerZones.map((zone) => (
-              <Circle
-                key={`density-${zone.id}`}
-                center={{ latitude: zone.latitude, longitude: zone.longitude }}
-                radius={getDensityRadius(zone.confirmCount)}
-                strokeColor="transparent"
-                fillColor={Colors.danger + '30'}
-                strokeWidth={0}
-              />
-            ))}
-            {dangerZones.map((zone) => (
-              <Circle
-                key={zone.id}
-                center={{ latitude: zone.latitude, longitude: zone.longitude }}
-                radius={zone.radius}
-                strokeColor={Colors.danger + '80'}
-                fillColor={Colors.danger + '20'}
-                strokeWidth={1}
-              />
-            ))}
-          </MapView>
+          {Platform.OS === 'web' || !MapView ? (
+            <MapPlaceholder message={`危険スポット ${dangerZones.length}件`} />
+          ) : (
+            <MapView
+              style={styles.map}
+              provider={PROVIDER_DEFAULT}
+              initialRegion={{
+                latitude: currentLat,
+                longitude: currentLng,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              }}
+            >
+              {dangerZones.map((zone) => (
+                <Circle
+                  key={`density-${zone.id}`}
+                  center={{ latitude: zone.latitude, longitude: zone.longitude }}
+                  radius={getDensityRadius(zone.confirmCount)}
+                  strokeColor="transparent"
+                  fillColor={Colors.danger + '30'}
+                  strokeWidth={0}
+                />
+              ))}
+              {dangerZones.map((zone) => (
+                <Circle
+                  key={zone.id}
+                  center={{ latitude: zone.latitude, longitude: zone.longitude }}
+                  radius={zone.radius}
+                  strokeColor={Colors.danger + '80'}
+                  fillColor={Colors.danger + '20'}
+                  strokeWidth={1}
+                />
+              ))}
+            </MapView>
+          )}
         </View>
       ) : (
         /* List view */
