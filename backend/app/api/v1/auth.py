@@ -124,6 +124,7 @@ async def onboarding(
     # 自宅位置を更新
     current_user.home_latitude = request.home_latitude
     current_user.home_longitude = request.home_longitude
+    current_user.onboarding_completed = True
 
     # 子どもプロフィール作成
     child = Child(
@@ -143,7 +144,7 @@ async def onboarding(
             route = await route_engine.calculate_safe_route(
                 origin_lat=request.home_latitude,
                 origin_lng=request.home_longitude,
-                destination_lat=None,  # 学校の座標はDBから取得
+                destination_lat=None,
                 destination_lng=None,
                 child_id=child.id,
                 school_id=request.school_id,
@@ -151,7 +152,6 @@ async def onboarding(
             if route:
                 recommended_route_id = route.route.id
         except Exception:
-            # ルート計算失敗は無視（後で再計算可能）
             pass
 
     return OnboardingResponse(
