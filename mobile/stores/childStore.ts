@@ -22,10 +22,10 @@ export const useChildStore = create<ChildState>((set, get) => ({
   fetchChildren: async () => {
     set({ isLoading: true });
     try {
-      const children = await childrenApi.list();
+      const data = await childrenApi.list();
       set({
-        children,
-        activeChildId: children.length > 0 ? children[0].id : undefined,
+        children: data.children,
+        activeChildId: data.children.length > 0 ? data.children[0].id : undefined,
       });
     } catch {
       // Silently fail

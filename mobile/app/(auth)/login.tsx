@@ -10,12 +10,39 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors } from '../../constants';
+import { Colors, API_URL } from '../../constants';
 import { loginWithLine, loginWithApple, loginWithGoogle } from '../../services/auth';
+import { authApi } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 
 export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+
+  const { login } = useAuthStore();
+
+  // 開発用: テストユーザーでログイン
+  const handleDevLogin = async () => {
+    setIsLoading(true);
+    try {
+      // バックエンドでテストユーザーを作成してトークンを取得
+      const response = await fetch(`${API_URL}/auth/dev-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      await login(data.user, data.access_token, data.access_token);
+      if (data.user.onboarding_completed) {
+        router.replace('/(main)/map');
+      } else {
+        router.replace('/(onboarding)/home-location');
+      }
+    } catch (error) {
+      Alert.alert('開発ログインエラー', error instanceof Error ? error.message : 'エラーが発生しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (provider: 'line' | 'apple' | 'google') => {
     setIsLoading(true);
@@ -120,6 +147,19 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Dev Login (開発用) */}
+        {__DEV__ && (
+          <TouchableOpacity
+            style={styles.devButton}
+            onPress={handleDevLogin}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="code-slash" size={16} color={Colors.warning} />
+            <Text style={styles.devButtonText}>開発用ログイン（テストユーザー）</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Footer */}
         <Text style={styles.terms}>
           ログインすることで、利用規約とプライバシーポリシーに{'\n'}同意したものとみなされます。
@@ -207,6 +247,22 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  devButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.warning,
+    borderStyle: 'dashed',
+  },
+  devButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.warning,
   },
   terms: {
     fontSize: 11,

@@ -19,8 +19,8 @@ export const Colors = {
   cardShadow: 'rgba(0, 0, 0, 0.08)',
 } as const;
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
-export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8000';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8002/api/v1';
+export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8002';
 
 export const LINE_CLIENT_ID = process.env.EXPO_PUBLIC_LINE_CLIENT_ID || '';
 export const LINE_REDIRECT_URI = process.env.EXPO_PUBLIC_LINE_REDIRECT_URI || 'guardian-ai://auth/callback';

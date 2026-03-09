@@ -14,7 +14,7 @@ import { Colors } from '../../constants';
 import OnboardingProgress from '../../components/OnboardingProgress';
 import SafeRouteMap from '../../components/SafeRouteMap';
 import RiskBadge from '../../components/RiskBadge';
-import { onboardingApi, routesApi } from '../../services/api';
+import { onboardingApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { useOnboardingStore } from '../../stores/onboardingStore';
 import type { SafeRoute } from '../../types';
@@ -38,13 +38,10 @@ export default function CompleteScreen() {
 
   const calculateRoute = async () => {
     try {
-      const data = await routesApi.calculateRoute(
-        { lat: homeLat, lng: homeLng },
-        { lat: schoolLat, lng: schoolLng }
-      );
-      setRoute(data);
+      // ルート計算はオンボーディング完了後にサーバー側で行うため、
+      // ここでは地図表示のみ
     } catch {
-      // Show map without route
+      // ignore
     } finally {
       setIsLoading(false);
     }
@@ -58,8 +55,9 @@ export default function CompleteScreen() {
         homeLongitude: homeLng,
         homeAddress: onboarding.homeAddress,
         schoolId: onboarding.schoolId,
+        schoolName: onboarding.schoolName,
         gpsDeviceType: onboarding.gpsDevice !== 'none' ? onboarding.gpsDevice : undefined,
-        childName: onboarding.childName,
+        childName: onboarding.childName || 'お子さま',
         childGrade: onboarding.childGrade,
       });
       setOnboarded(true);

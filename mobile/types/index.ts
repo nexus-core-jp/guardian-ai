@@ -97,9 +97,11 @@ export interface Alert {
 
 export interface DangerReport {
   type: 'suspicious_person' | 'traffic' | 'dark_road' | 'other';
+  title: string;
   description?: string;
   latitude: number;
   longitude: number;
+  riskLevel?: number;
 }
 
 export interface OnboardingRequest {
@@ -107,6 +109,7 @@ export interface OnboardingRequest {
   homeLongitude: number;
   homeAddress: string;
   schoolId: string;
+  schoolName?: string;
   gpsDeviceType?: string;
   childName: string;
   childGrade?: number;

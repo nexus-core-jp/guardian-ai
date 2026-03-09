@@ -56,7 +56,7 @@ export const useAlertStore = create<AlertState>((set, get) => ({
   fetchUnreadCount: async () => {
     try {
       const data = await alertsApi.getUnreadCount();
-      set({ unreadCount: data.count });
+      set({ unreadCount: data.unread_count });
     } catch {
       // Silently fail
     }

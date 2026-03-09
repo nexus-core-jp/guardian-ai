@@ -162,6 +162,34 @@ async def onboarding(
     )
 
 
+@router.post("/dev-login", response_model=TokenResponse, summary="開発用ログイン")
+async def dev_login(db: AsyncSession = Depends(get_db)):
+    """
+    開発環境専用: テストユーザーを作成/取得してログインする。
+    本番環境では無効化すること。
+    """
+    if not settings.DEBUG:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    line_id = "dev_test_user"
+    result = await db.execute(select(User).where(User.line_id == line_id))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        user = User(
+            line_id=line_id,
+            name="テスト保護者",
+        )
+        db.add(user)
+        await db.flush()
+
+    access_token = create_access_token(user.id)
+    return TokenResponse(
+        access_token=access_token,
+        user=UserResponse.model_validate(user),
+    )
+
+
 @router.get("/me", response_model=UserResponse, summary="現在のユーザー情報")
 async def get_me(current_user: User = Depends(get_current_user)):
     """現在ログイン中のユーザー情報を返す"""

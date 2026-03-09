@@ -89,95 +89,113 @@ function getErrorMessage(error: AxiosError): string {
 // Auth
 export const authApi = {
   loginWithLine: (code: string, redirectUri: string) =>
-    api.post<LoginResponse>('/auth/line', { code, redirectUri }).then((r) => r.data),
+    api.post<LoginResponse>('/auth/line', { code, redirect_uri: redirectUri }).then((r) => r.data),
 
-  loginWithApple: (identityToken: string) =>
-    api.post<LoginResponse>('/auth/apple', { identityToken }).then((r) => r.data),
-
-  loginWithGoogle: (idToken: string) =>
-    api.post<LoginResponse>('/auth/google', { idToken }).then((r) => r.data),
+  // 開発用: JWTトークンで直接ログイン
+  devLogin: (token: string) => {
+    return api.get<User>('/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((r) => r.data);
+  },
 
   getMe: () => api.get<User>('/auth/me').then((r) => r.data),
 
-  logout: () => api.post('/auth/logout'),
+  logout: () => api.post('/auth/logout').then((r) => r.data),
 };
 
 // Onboarding
 export const onboardingApi = {
   complete: (data: OnboardingRequest) =>
-    api.post<{ success: boolean }>('/onboarding/complete', data).then((r) => r.data),
+    api.post('/auth/onboarding', {
+      home_latitude: data.homeLatitude,
+      home_longitude: data.homeLongitude,
+      school_name: data.schoolName,
+      school_id: data.schoolId,
+      child_name: data.childName,
+      child_grade: data.childGrade,
+    }).then((r) => r.data),
 };
 
 // Children
 export const childrenApi = {
-  list: () => api.get<Child[]>('/children').then((r) => r.data),
+  list: () => api.get<{ children: Child[]; total: number }>('/children').then((r) => r.data),
 
   get: (id: string) => api.get<Child>(`/children/${id}`).then((r) => r.data),
 
   update: (id: string, data: Partial<Child>) =>
-    api.patch<Child>(`/children/${id}`, data).then((r) => r.data),
+    api.put<Child>(`/children/${id}`, data).then((r) => r.data),
 
   getLocation: (id: string) =>
-    api.get<ChildLocation>(`/children/${id}/location`).then((r) => r.data),
+    api.get<ChildLocation>(`/locations/${id}/latest`).then((r) => r.data),
 
-  getLocationHistory: (id: string, date: string) =>
-    api.get<ChildLocation[]>(`/children/${id}/location/history`, { params: { date } }).then((r) => r.data),
+  getLocationHistory: (id: string, params?: { limit?: number }) =>
+    api.get<ChildLocation[]>(`/locations/${id}/history`, { params }).then((r) => r.data),
 };
 
 // Schools
 export const schoolsApi = {
   search: (query: string, lat?: number, lng?: number) =>
     api
-      .get<School[]>('/schools/search', { params: { q: query, lat, lng } })
+      .get<{ schools: School[]; total: number }>('/schools/search', { params: { q: query, lat, lng } })
       .then((r) => r.data),
 
-  nearby: (lat: number, lng: number, radius?: number) =>
+  nearby: (lat: number, lng: number, limit?: number) =>
     api
-      .get<School[]>('/schools/nearby', { params: { lat, lng, radius: radius || 5000 } })
+      .get<{ schools: School[]; total: number }>('/schools/nearby', { params: { lat, lng, limit: limit || 10 } })
       .then((r) => r.data),
 };
 
 // Routes
 export const routesApi = {
-  getSafeRoute: (childId: string) =>
-    api.get<SafeRoute>(`/routes/safe/${childId}`).then((r) => r.data),
+  getRecommended: (childId: string) =>
+    api.get<SafeRoute>(`/routes/${childId}/recommended`).then((r) => r.data),
 
-  calculateRoute: (homeLatLng: { lat: number; lng: number }, schoolLatLng: { lat: number; lng: number }) =>
-    api
-      .post<SafeRoute>('/routes/calculate', {
-        homeLat: homeLatLng.lat,
-        homeLng: homeLatLng.lng,
-        schoolLat: schoolLatLng.lat,
-        schoolLng: schoolLatLng.lng,
-      })
-      .then((r) => r.data),
+  list: (childId: string) =>
+    api.get<{ routes: SafeRoute[]; total: number }>(`/routes/${childId}`).then((r) => r.data),
+
+  calculate: (data: {
+    origin: { latitude: number; longitude: number };
+    destination: { latitude: number; longitude: number };
+    child_id?: string;
+  }) =>
+    api.post<SafeRoute>('/routes/calculate', data).then((r) => r.data),
 };
 
 // Alerts
 export const alertsApi = {
   list: (page: number = 1, limit: number = 20) =>
-    api.get<{ alerts: Alert[]; total: number }>('/alerts', { params: { page, limit } }).then((r) => r.data),
+    api.get<{ alerts: Alert[]; total: number; unread_count: number }>('/alerts', { params: { skip: (page - 1) * limit, limit } }).then((r) => r.data),
 
-  markRead: (id: string) => api.patch(`/alerts/${id}/read`).then((r) => r.data),
+  markRead: (id: string) => api.put(`/alerts/${id}/read`).then((r) => r.data),
 
-  markAllRead: () => api.patch('/alerts/read-all').then((r) => r.data),
+  markAllRead: () => api.put('/alerts/read-all').then((r) => r.data),
 
   getUnreadCount: () =>
-    api.get<{ count: number }>('/alerts/unread-count').then((r) => r.data),
+    api.get<{ unread_count: number }>('/alerts/unread').then((r) => r.data),
 };
 
 // Danger Zones / Community
 export const communityApi = {
   getDangerZones: (lat: number, lng: number, radius?: number) =>
     api
-      .get<DangerZone[]>('/community/danger-zones', { params: { lat, lng, radius: radius || 3000 } })
+      .get<{ danger_zones: DangerZone[]; total: number }>('/community/dangers', { params: { latitude: lat, longitude: lng, radius: radius || 3000 } })
       .then((r) => r.data),
 
   reportDanger: (report: DangerReport) =>
-    api.post<DangerZone>('/community/danger-zones', report).then((r) => r.data),
+    api.post<DangerZone>('/community/dangers', {
+      latitude: report.latitude,
+      longitude: report.longitude,
+      risk_type: report.type,
+      risk_level: report.riskLevel || 5,
+      title: report.title,
+      description: report.description,
+    }).then((r) => r.data),
 
-  confirmDanger: (id: string) =>
-    api.post<{ confirmed: boolean }>(`/community/danger-zones/${id}/confirm`).then((r) => r.data),
+  confirmDanger: (zoneId: string) =>
+    api.post<DangerZone>(`/community/dangers/${zoneId}/confirm`).then((r) => r.data),
+
+  getHeatmap: (lat: number, lng: number, radius?: number) =>
+    api.get('/community/heatmap', { params: { latitude: lat, longitude: lng, radius: radius || 3000 } }).then((r) => r.data),
 };
 
 // Notifications

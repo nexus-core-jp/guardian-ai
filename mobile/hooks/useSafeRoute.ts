@@ -15,7 +15,7 @@ export function useSafeRoute(childId: string | undefined) {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await routesApi.getSafeRoute(childId);
+      const data = await routesApi.getRecommended(childId);
       setRoute(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ルート情報を取得できませんでした');

@@ -24,8 +24,8 @@ export default function SchoolSelectScreen() {
 
   const loadNearbySchools = async () => {
     try {
-      const schools = await schoolsApi.nearby(homeLat, homeLng);
-      setNearbySchools(schools);
+      const data = await schoolsApi.nearby(homeLat, homeLng);
+      setNearbySchools(data.schools);
     } catch {
       // Will show empty list
     } finally {

@@ -29,6 +29,7 @@ class UserResponse(UserBase):
     avatar_url: str | None = None
     home_latitude: float | None = None
     home_longitude: float | None = None
+    onboarding_completed: bool = False
     is_active: bool
     created_at: datetime
     updated_at: datetime

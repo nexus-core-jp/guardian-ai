@@ -41,7 +41,7 @@ export default function SchoolSearchInput({
       try {
         setIsSearching(true);
         const data = await schoolsApi.search(text, currentLat, currentLng);
-        setResults(data);
+        setResults(data.schools);
       } catch {
         // Keep existing results on error
       } finally {

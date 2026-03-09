@@ -49,7 +49,7 @@ export default function CommunityScreen() {
         loc?.latitude || currentLat,
         loc?.longitude || currentLng
       );
-      setDangerZones(zones);
+      setDangerZones(zones.danger_zones);
     } catch {
       // Show empty
     } finally {
@@ -78,8 +78,10 @@ export default function CommunityScreen() {
     setIsSubmitting(true);
     try {
       const loc = await getCurrentLocation();
+      const dangerType = DANGER_TYPES.find((t) => t.id === reportType);
       const report: DangerReport = {
         type: reportType,
+        title: dangerType?.label || reportType,
         description: reportNote || undefined,
         latitude: loc?.latitude || currentLat,
         longitude: loc?.longitude || currentLng,

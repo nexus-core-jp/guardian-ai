@@ -49,7 +49,7 @@ export default function MapScreen() {
           currentLoc.latitude,
           currentLoc.longitude
         );
-        setDangerZones(zones);
+        setDangerZones(zones.danger_zones);
       } catch {
         // Silently fail
       }
