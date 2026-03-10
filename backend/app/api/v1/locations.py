@@ -20,6 +20,7 @@ from app.schemas.location import (
 from app.api.deps import get_current_user
 from app.services.anomaly_detector import AnomalyDetector
 from app.services.alert_service import AlertService
+from app.services.websocket_manager import ws_manager
 
 router = APIRouter()
 
@@ -95,7 +96,18 @@ async def record_location(
         pass
 
     await db.refresh(location)
-    return LocationResponse.model_validate(location)
+
+    # WebSocketでリアルタイム配信
+    location_response = LocationResponse.model_validate(location)
+    try:
+        await ws_manager.broadcast_location(
+            child_id=data.child_id,
+            location_data=location_response.model_dump(mode="json"),
+        )
+    except Exception:
+        pass  # WebSocket配信失敗はAPI応答に影響させない
+
+    return location_response
 
 
 @router.get(

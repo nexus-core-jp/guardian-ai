@@ -23,6 +23,9 @@ redis==5.2.1
 # Firebase (push notifications)
 firebase-admin==6.6.0
 
+# Background tasks
+apscheduler==3.10.4
+
 # Utilities
 python-multipart==0.0.19
 python-dotenv==1.0.1

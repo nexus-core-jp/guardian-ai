@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.api.v1.router import v1_router
+from app.services.scheduler import start_scheduler, stop_scheduler
 
 settings = get_settings()
 
@@ -17,8 +18,10 @@ async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理"""
     # 起動時
     await init_db()
+    start_scheduler()
     yield
     # 終了時
+    stop_scheduler()
     await close_db()
 
 
