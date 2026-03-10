@@ -9,6 +9,7 @@ from app.config import get_settings
 from app.database import init_db, close_db
 from app.api.v1.router import v1_router
 from app.services.scheduler import start_scheduler, stop_scheduler
+from app.middleware.rate_limit import RateLimitMiddleware
 
 settings = get_settings()
 
@@ -40,6 +41,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# レートリミティング
+app.add_middleware(RateLimitMiddleware)
 
 # v1ルーターをマウント
 app.include_router(v1_router, prefix="/api/v1")

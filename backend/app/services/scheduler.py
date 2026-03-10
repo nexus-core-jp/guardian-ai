@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 
 from app.database import async_session_factory
 from app.services.alert_service import AlertService
@@ -100,6 +101,17 @@ async def stale_location_check_job() -> None:
         logger.error(f"位置情報鮮度チェック失敗: {e}")
 
 
+async def crime_data_sync_job() -> None:
+    """犯罪データの定期同期（毎日AM3:00 JST）"""
+    logger.info("犯罪データ定期同期開始")
+    try:
+        from app.services.crime_data_sync import sync_crime_data
+        stats = await sync_crime_data()
+        logger.info(f"犯罪データ同期結果: {stats}")
+    except Exception as e:
+        logger.error(f"犯罪データ同期失敗: {e}")
+
+
 def start_scheduler() -> None:
     """スケジューラーを起動する"""
     # エスカレーションチェック: 1分間隔
@@ -117,6 +129,15 @@ def start_scheduler() -> None:
         trigger=IntervalTrigger(minutes=5),
         id="stale_location_check",
         name="位置情報鮮度チェック",
+        replace_existing=True,
+    )
+
+    # 犯罪データ定期同期: 毎日AM3:00(JST)に実行
+    scheduler.add_job(
+        crime_data_sync_job,
+        trigger=CronTrigger(hour=18, minute=0),  # UTC 18:00 = JST 03:00
+        id="crime_data_sync",
+        name="犯罪データ定期同期",
         replace_existing=True,
     )
 
