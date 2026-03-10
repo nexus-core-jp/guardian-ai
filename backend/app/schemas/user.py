@@ -58,6 +58,7 @@ class OnboardingResponse(BaseModel):
 class TokenResponse(BaseModel):
     """認証トークンレスポンス"""
     access_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
     user: UserResponse
 
@@ -66,3 +67,15 @@ class LINELoginRequest(BaseModel):
     """LINE ログインリクエスト"""
     code: str = Field(..., description="LINE認証コード")
     state: str | None = Field(None, description="CSRFトークン")
+
+
+class RefreshTokenRequest(BaseModel):
+    """トークンリフレッシュリクエスト"""
+    refresh_token: str = Field(..., description="リフレッシュトークン")
+
+
+class RefreshTokenResponse(BaseModel):
+    """トークンリフレッシュレスポンス"""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"

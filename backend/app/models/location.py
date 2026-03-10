@@ -4,9 +4,10 @@ import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import Float, DateTime, ForeignKey, Enum, func
+from sqlalchemy import Float, DateTime, ForeignKey, Enum, func, Column
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from geoalchemy2 import Geometry
 
 from app.database import Base
 
@@ -51,6 +52,9 @@ class Location(Base):
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
+
+    # PostGIS Geometry列（トリガーでlat/lngから自動生成）
+    geom = Column(Geometry("POINT", srid=4326), nullable=True)
 
     # リレーション
     child: Mapped["Child"] = relationship("Child", back_populates="locations")

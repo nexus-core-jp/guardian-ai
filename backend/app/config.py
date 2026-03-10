@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     MAPBOX_TOKEN: str = ""
     GOOGLE_MAPS_API_KEY: str = ""
 
+    # GPSデバイス連携
+    BOT_WEBHOOK_SECRET: str = ""
+    MITSUNE_API_KEY: str = ""
+
     # JWT
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7日間

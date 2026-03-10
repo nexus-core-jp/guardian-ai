@@ -477,24 +477,37 @@ class RouteEngine:
         origin_lat: float, origin_lng: float,
         dest_lat: float, dest_lng: float,
     ) -> list[RiskFactor]:
-        """ルート周辺の危険エリアを取得する"""
-        min_lat = min(origin_lat, dest_lat) - 0.01
-        max_lat = max(origin_lat, dest_lat) + 0.01
-        min_lng = min(origin_lng, dest_lng) - 0.01
-        max_lng = max(origin_lng, dest_lng) + 0.01
+        """ルート周辺の危険エリアをPostGIS ST_DWithinで取得する"""
+        # ルートの中心点から、ルート全長 + 1km のバッファで検索
+        center_lat = (origin_lat + dest_lat) / 2
+        center_lng = (origin_lng + dest_lng) / 2
+        route_distance = self._haversine_distance(origin_lat, origin_lng, dest_lat, dest_lng)
+        search_radius = (route_distance / 2) + 1000  # ルート半長 + 1km
 
-        result = await self.db.execute(
-            select(DangerZone).where(
-                DangerZone.is_active == True,
-                DangerZone.latitude >= min_lat,
-                DangerZone.latitude <= max_lat,
-                DangerZone.longitude >= min_lng,
-                DangerZone.longitude <= max_lng,
-                (DangerZone.expires_at == None) |
-                (DangerZone.expires_at > datetime.now(timezone.utc)),
+        try:
+            from app.services.spatial import get_danger_zones_within
+            zones = await get_danger_zones_within(
+                self.db, center_lat, center_lng, search_radius
             )
-        )
-        zones = result.scalars().all()
+        except Exception:
+            # PostGIS未対応時のフォールバック
+            min_lat = min(origin_lat, dest_lat) - 0.01
+            max_lat = max(origin_lat, dest_lat) + 0.01
+            min_lng = min(origin_lng, dest_lng) - 0.01
+            max_lng = max(origin_lng, dest_lng) + 0.01
+
+            result = await self.db.execute(
+                select(DangerZone).where(
+                    DangerZone.is_active == True,
+                    DangerZone.latitude >= min_lat,
+                    DangerZone.latitude <= max_lat,
+                    DangerZone.longitude >= min_lng,
+                    DangerZone.longitude <= max_lng,
+                    (DangerZone.expires_at == None) |
+                    (DangerZone.expires_at > datetime.now(timezone.utc)),
+                )
+            )
+            zones = result.scalars().all()
 
         return [
             RiskFactor(

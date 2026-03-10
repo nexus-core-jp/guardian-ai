@@ -187,23 +187,30 @@ class DangerAnalyzer:
         longitude: float,
         radius_meters: float,
     ) -> list[DangerZone]:
-        """指定エリア内の危険ゾーンを取得する"""
-        # 緯度1度 ≈ 111km, 経度1度 ≈ 91km（日本の平均）
-        lat_range = radius_meters / 111000.0
-        lng_range = radius_meters / 91000.0
+        """指定エリア内の危険ゾーンをPostGIS ST_DWithinで取得する"""
+        from app.services.spatial import get_danger_zones_within
 
-        result = await self.db.execute(
-            select(DangerZone).where(
-                DangerZone.is_active == True,
-                DangerZone.latitude >= latitude - lat_range,
-                DangerZone.latitude <= latitude + lat_range,
-                DangerZone.longitude >= longitude - lng_range,
-                DangerZone.longitude <= longitude + lng_range,
-                (DangerZone.expires_at == None) |
-                (DangerZone.expires_at > datetime.now(timezone.utc)),
+        try:
+            return await get_danger_zones_within(
+                self.db, latitude, longitude, radius_meters
             )
-        )
-        return list(result.scalars().all())
+        except Exception:
+            # PostGIS未対応時のフォールバック（バウンディングボックス）
+            lat_range = radius_meters / 111000.0
+            lng_range = radius_meters / 91000.0
+
+            result = await self.db.execute(
+                select(DangerZone).where(
+                    DangerZone.is_active == True,
+                    DangerZone.latitude >= latitude - lat_range,
+                    DangerZone.latitude <= latitude + lat_range,
+                    DangerZone.longitude >= longitude - lng_range,
+                    DangerZone.longitude <= longitude + lng_range,
+                    (DangerZone.expires_at == None) |
+                    (DangerZone.expires_at > datetime.now(timezone.utc)),
+                )
+            )
+            return list(result.scalars().all())
 
     @staticmethod
     def _get_time_of_day(time: datetime) -> TimeOfDay:

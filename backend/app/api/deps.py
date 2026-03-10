@@ -87,5 +87,38 @@ def create_access_token(user_id: uuid.UUID) -> str:
         "sub": str(user_id),
         "exp": expire,
         "iat": datetime.now(timezone.utc),
+        "type": "access",
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def create_refresh_token(user_id: uuid.UUID) -> str:
+    """リフレッシュトークンを生成する（30日間有効）"""
+    from datetime import timedelta
+
+    expire = datetime.now(timezone.utc) + timedelta(days=30)
+    payload = {
+        "sub": str(user_id),
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+        "type": "refresh",
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def verify_refresh_token(token: str) -> uuid.UUID | None:
+    """リフレッシュトークンを検証してuser_idを返す"""
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+        if payload.get("type") != "refresh":
+            return None
+        user_id = payload.get("sub")
+        if user_id:
+            return uuid.UUID(user_id)
+    except (JWTError, ValueError):
+        pass
+    return None

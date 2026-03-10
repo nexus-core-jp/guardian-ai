@@ -15,8 +15,10 @@ from app.schemas.user import (
     UserResponse,
     OnboardingRequest,
     OnboardingResponse,
+    RefreshTokenRequest,
+    RefreshTokenResponse,
 )
-from app.api.deps import create_access_token, get_current_user
+from app.api.deps import create_access_token, create_refresh_token, verify_refresh_token, get_current_user
 from app.services.route_engine import RouteEngine
 
 router = APIRouter()
@@ -91,9 +93,11 @@ async def line_login(
 
     # JWTトークン生成
     access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
 
     return TokenResponse(
         access_token=access_token,
+        refresh_token=refresh_token,
         user=UserResponse.model_validate(user),
     )
 
@@ -184,8 +188,10 @@ async def dev_login(db: AsyncSession = Depends(get_db)):
         await db.flush()
 
     access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
     return TokenResponse(
         access_token=access_token,
+        refresh_token=refresh_token,
         user=UserResponse.model_validate(user),
     )
 
@@ -194,3 +200,51 @@ async def dev_login(db: AsyncSession = Depends(get_db)):
 async def get_me(current_user: User = Depends(get_current_user)):
     """現在ログイン中のユーザー情報を返す"""
     return UserResponse.model_validate(current_user)
+
+
+@router.post("/refresh", response_model=RefreshTokenResponse, summary="トークンリフレッシュ")
+async def refresh_token(
+    request: RefreshTokenRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    リフレッシュトークンを使って新しいアクセストークンとリフレッシュトークンを取得する。
+    リフレッシュトークンはローテーション方式（使用済みトークンは無効化される）。
+    """
+    user_id = verify_refresh_token(request.refresh_token)
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="無効なリフレッシュトークンです",
+        )
+
+    # ユーザーの存在確認
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ユーザーが見つかりません",
+        )
+
+    # 新しいトークンペアを発行（ローテーション）
+    new_access_token = create_access_token(user.id)
+    new_refresh_token = create_refresh_token(user.id)
+
+    return RefreshTokenResponse(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token,
+    )
+
+
+@router.put("/fcm-token", status_code=status.HTTP_200_OK, summary="FCMトークン更新")
+async def update_fcm_token(
+    fcm_token: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """プッシュ通知用のFCMトークンを更新する"""
+    current_user.fcm_token = fcm_token
+    await db.flush()
+    return {"status": "ok"}
