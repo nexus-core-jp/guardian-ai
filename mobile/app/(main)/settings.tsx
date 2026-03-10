@@ -7,15 +7,16 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants';
 import { useAuthStore } from '../../stores/authStore';
 import { logoutUser } from '../../services/auth';
-import { notificationsApi, settingsApi } from '../../services/api';
+import { notificationsApi, settingsApi, childrenApi } from '../../services/api';
 import { router } from 'expo-router';
-import type { NotificationPreferences } from '../../types';
+import type { NotificationPreferences, Child } from '../../types';
 
 interface SettingItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -76,6 +77,8 @@ function ToggleItem({ icon, label, value, onToggle }: ToggleItemProps) {
 
 export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
+
+  const [children, setChildren] = useState<Child[]>([]);
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>({
     routeDeviation: true,
     dangerZone: true,
@@ -86,7 +89,17 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     loadPreferences();
+    loadChildren();
   }, []);
+
+  const loadChildren = async () => {
+    try {
+      const data = await childrenApi.list();
+      setChildren(data.children);
+    } catch {
+      // Use empty
+    }
+  };
 
   const loadPreferences = async () => {
     try {
@@ -173,12 +186,20 @@ export default function SettingsScreen() {
           <SettingItem
             icon="person-circle-outline"
             label="お子様のプロフィール"
-            onPress={() => {}}
+            value={children.length > 0 ? children.map((c) => c.name).join(', ') : undefined}
+            onPress={() => {
+              if (children.length > 0) {
+                router.push(`/(main)/child/${children[0].id}` as any);
+              }
+            }}
           />
           <SettingItem
             icon="watch-outline"
             label="GPSデバイス設定"
-            onPress={() => {}}
+            value={children.length > 0 && children[0].gpsDeviceType ? children[0].gpsDeviceType : undefined}
+            onPress={() => {
+              Alert.alert('GPSデバイス設定', 'GPSデバイスの管理はオンボーディングから再設定できます。');
+            }}
           />
         </View>
 
@@ -188,18 +209,25 @@ export default function SettingsScreen() {
           <SettingItem
             icon="home-outline"
             label="自宅の場所"
-            onPress={() => {}}
+            onPress={() => {
+              router.push('/(onboarding)/home-location' as any);
+            }}
           />
           <SettingItem
             icon="school-outline"
             label="学校の設定"
-            onPress={() => {}}
+            value={children.length > 0 ? children[0].schoolName : undefined}
+            onPress={() => {
+              router.push('/(onboarding)/school-select' as any);
+            }}
           />
           <SettingItem
             icon="time-outline"
             label="時間帯設定"
             value="7:30 - 8:15"
-            onPress={() => {}}
+            onPress={() => {
+              Alert.alert('時間帯設定', '通学時間帯の設定は今後のアップデートで対応予定です。');
+            }}
           />
         </View>
 
@@ -244,17 +272,23 @@ export default function SettingsScreen() {
           <SettingItem
             icon="document-text-outline"
             label="利用規約"
-            onPress={() => {}}
+            onPress={() => {
+              Linking.openURL('https://guardian-ai.jp/terms');
+            }}
           />
           <SettingItem
             icon="shield-outline"
             label="プライバシーポリシー"
-            onPress={() => {}}
+            onPress={() => {
+              Linking.openURL('https://guardian-ai.jp/privacy');
+            }}
           />
           <SettingItem
             icon="help-circle-outline"
             label="ヘルプ・お問い合わせ"
-            onPress={() => {}}
+            onPress={() => {
+              Linking.openURL('mailto:support@guardian-ai.jp');
+            }}
           />
           <SettingItem
             icon="log-out-outline"

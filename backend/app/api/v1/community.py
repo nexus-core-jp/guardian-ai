@@ -97,6 +97,42 @@ async def report_danger_zone(
     return DangerZoneResponse.model_validate(danger_zone)
 
 
+@router.post(
+    "/dangers/{zone_id}/confirm",
+    response_model=DangerZoneResponse,
+    summary="危険エリアを確認",
+)
+async def confirm_danger_zone(
+    zone_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    報告された危険エリアを確認（同意）する。
+    確認数が増えるほど信頼度が上がる。3件以上で verified フラグが立つ。
+    """
+    import uuid as _uuid
+    result = await db.execute(
+        select(DangerZone).where(DangerZone.id == _uuid.UUID(zone_id))
+    )
+    zone = result.scalar_one_or_none()
+
+    if zone is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="危険エリアが見つかりません",
+        )
+
+    zone.confirm_count = (zone.confirm_count or 0) + 1
+    if zone.confirm_count >= 3:
+        zone.verified = True
+
+    await db.flush()
+    await db.refresh(zone)
+
+    return DangerZoneResponse.model_validate(zone)
+
+
 @router.get("/heatmap", response_model=HeatmapResponse, summary="安全ヒートマップデータ")
 async def get_safety_heatmap(
     latitude: float = Query(..., ge=-90, le=90, description="中心緯度"),

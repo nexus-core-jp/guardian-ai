@@ -75,5 +75,8 @@ class DangerZone(Base):
     verified: Mapped[bool] = mapped_column(
         default=False, comment="確認済みかどうか"
     )
+    confirm_count: Mapped[int] = mapped_column(
+        Integer, default=0, comment="確認数"
+    )
     # PostGIS Geometry列（トリガーでlat/lngから自動生成）
     geom = Column(Geometry("POINT", srid=4326), nullable=True)

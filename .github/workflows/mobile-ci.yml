@@ -1,4 +1,4 @@
-name: Mobile CI
+name: Mobile CI/CD
 
 on:
   push:
@@ -38,3 +38,33 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
       - run: npm test -- --ci --coverage
+
+  eas-build:
+    runs-on: ubuntu-latest
+    needs: [typecheck, test]
+    if: github.ref == 'refs/heads/master'
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build preview
+        if: env.EXPO_TOKEN != ''
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --profile preview --platform all --non-interactive
+      - name: Skip build (no token)
+        if: env.EXPO_TOKEN == ''
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: echo "::warning::EXPO_TOKEN not configured. Skipping EAS build."
