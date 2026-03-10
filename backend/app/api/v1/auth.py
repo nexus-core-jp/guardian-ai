@@ -1,7 +1,10 @@
-"""認証エンドポイント（LINE ログイン）"""
+"""認証エンドポイント（LINE / Apple / Google ログイン）"""
+
+import logging
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from jose import jwt as jose_jwt, JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +14,8 @@ from app.models.user import User
 from app.models.child import Child
 from app.schemas.user import (
     LINELoginRequest,
+    AppleLoginRequest,
+    GoogleLoginRequest,
     TokenResponse,
     UserResponse,
     OnboardingRequest,
@@ -20,6 +25,8 @@ from app.schemas.user import (
 )
 from app.api.deps import create_access_token, create_refresh_token, verify_refresh_token, get_current_user
 from app.services.route_engine import RouteEngine
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 settings = get_settings()
@@ -163,6 +170,166 @@ async def onboarding(
         child_id=child.id,
         recommended_route_id=recommended_route_id,
         message="セットアップが完了しました。お子様の安全を見守ります。",
+    )
+
+
+@router.post("/apple", response_model=TokenResponse, summary="Apple Sign-Inログイン")
+async def apple_login(
+    request: AppleLoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Apple ID Tokenを検証してログイン/新規登録を行う。
+    """
+    try:
+        # Apple公開鍵を取得してJWTを検証
+        async with httpx.AsyncClient() as client:
+            jwks_response = await client.get("https://appleid.apple.com/auth/keys")
+            jwks = jwks_response.json()
+
+        # ヘッダーからkidを取得
+        unverified_header = jose_jwt.get_unverified_header(request.id_token)
+        kid = unverified_header.get("kid")
+
+        # 一致する公開鍵を探す
+        key = None
+        for k in jwks.get("keys", []):
+            if k["kid"] == kid:
+                key = k
+                break
+
+        if key is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Apple公開鍵の検証に失敗しました",
+            )
+
+        # JWTを検証（python-joseはJWKから直接検証可能）
+        payload = jose_jwt.decode(
+            request.id_token,
+            key,
+            algorithms=["RS256"],
+            audience=settings.APPLE_BUNDLE_ID,
+            issuer="https://appleid.apple.com",
+        )
+
+    except JWTError as e:
+        logger.warning(f"Apple ID Token検証失敗: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Apple認証に失敗しました",
+        )
+
+    apple_sub = payload.get("sub")
+    apple_email = payload.get("email")
+
+    if not apple_sub:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Apple IDの取得に失敗しました",
+        )
+
+    # 既存ユーザーを検索
+    result = await db.execute(select(User).where(User.apple_id == apple_sub))
+    user = result.scalar_one_or_none()
+
+    # Apple IDで見つからない場合、メールで既存アカウントを検索してリンク
+    if user is None and apple_email:
+        result = await db.execute(select(User).where(User.email == apple_email))
+        user = result.scalar_one_or_none()
+        if user:
+            user.apple_id = apple_sub
+
+    if user is None:
+        display_name = request.full_name or "ユーザー"
+        user = User(
+            apple_id=apple_sub,
+            email=apple_email,
+            name=display_name,
+        )
+        db.add(user)
+        await db.flush()
+
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=UserResponse.model_validate(user),
+    )
+
+
+@router.post("/google", response_model=TokenResponse, summary="Googleログイン")
+async def google_login(
+    request: GoogleLoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Google ID Tokenを検証してログイン/新規登録を行う。
+    GoogleのtokeninfoエンドポイントでIDトークンを検証する。
+    """
+    # Google ID Tokenを検証
+    async with httpx.AsyncClient() as client:
+        verify_response = await client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": request.id_token},
+        )
+
+        if verify_response.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Google認証に失敗しました",
+            )
+
+        payload = verify_response.json()
+
+    # aud（クライアントID）の検証
+    if settings.GOOGLE_CLIENT_ID and payload.get("aud") != settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google認証の検証に失敗しました",
+        )
+
+    google_sub = payload.get("sub")
+    google_email = payload.get("email")
+    google_name = payload.get("name", "ユーザー")
+    google_picture = payload.get("picture")
+
+    if not google_sub:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google IDの取得に失敗しました",
+        )
+
+    # 既存ユーザーを検索
+    result = await db.execute(select(User).where(User.google_id == google_sub))
+    user = result.scalar_one_or_none()
+
+    # Google IDで見つからない場合、メールで既存アカウントを検索してリンク
+    if user is None and google_email:
+        result = await db.execute(select(User).where(User.email == google_email))
+        user = result.scalar_one_or_none()
+        if user:
+            user.google_id = google_sub
+
+    if user is None:
+        user = User(
+            google_id=google_sub,
+            email=google_email,
+            name=google_name,
+            avatar_url=google_picture,
+        )
+        db.add(user)
+        await db.flush()
+
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=UserResponse.model_validate(user),
     )
 
 

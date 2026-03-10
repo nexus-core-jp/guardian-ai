@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     MAPBOX_TOKEN: str = ""
     GOOGLE_MAPS_API_KEY: str = ""
 
+    # Apple Sign-In
+    APPLE_TEAM_ID: str = ""
+    APPLE_BUNDLE_ID: str = "com.guardianai.mobile"
+
+    # Google Sign-In
+    GOOGLE_CLIENT_ID: str = ""
+
     # GPSデバイス連携
     BOT_WEBHOOK_SECRET: str = ""
     MITSUNE_API_KEY: str = ""

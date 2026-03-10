@@ -91,6 +91,16 @@ export const authApi = {
   loginWithLine: (code: string, redirectUri: string) =>
     api.post<LoginResponse>('/auth/line', { code, redirect_uri: redirectUri }).then((r) => r.data),
 
+  loginWithApple: (idToken: string, authorizationCode?: string, fullName?: string) =>
+    api.post<LoginResponse>('/auth/apple', {
+      id_token: idToken,
+      authorization_code: authorizationCode,
+      full_name: fullName,
+    }).then((r) => r.data),
+
+  loginWithGoogle: (idToken: string) =>
+    api.post<LoginResponse>('/auth/google', { id_token: idToken }).then((r) => r.data),
+
   // 開発用: JWTトークンで直接ログイン
   devLogin: (token: string) => {
     return api.get<User>('/auth/me', {

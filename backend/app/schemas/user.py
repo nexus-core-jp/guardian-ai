@@ -79,3 +79,15 @@ class RefreshTokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class AppleLoginRequest(BaseModel):
+    """Apple Sign-Inリクエスト"""
+    id_token: str = Field(..., description="Apple ID Token (JWT)")
+    authorization_code: str | None = Field(None, description="Apple Authorization Code")
+    full_name: str | None = Field(None, description="ユーザー名（初回ログイン時のみ）")
+
+
+class GoogleLoginRequest(BaseModel):
+    """Googleログインリクエスト"""
+    id_token: str = Field(..., description="Google ID Token")

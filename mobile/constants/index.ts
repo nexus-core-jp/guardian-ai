@@ -24,6 +24,7 @@ export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8002';
 
 export const LINE_CLIENT_ID = process.env.EXPO_PUBLIC_LINE_CLIENT_ID || '';
 export const LINE_REDIRECT_URI = process.env.EXPO_PUBLIC_LINE_REDIRECT_URI || 'guardian-ai://auth/callback';
+export const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '';
 
 export const GPS_DEVICES = [
   { id: 'bot-talk', name: 'BoTトーク', icon: '🤖' },

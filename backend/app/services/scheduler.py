@@ -28,6 +28,20 @@ async def escalation_check_job() -> None:
             alert_service = AlertService(session)
             escalated = await alert_service.check_and_escalate()
             if escalated:
+                # エスカレーションされたアラートをWebSocket経由でもブロードキャスト
+                from app.services.websocket_manager import ws_manager
+                for alert in escalated:
+                    await ws_manager.broadcast_alert(
+                        child_id=str(alert.child_id),
+                        alert_data={
+                            "id": str(alert.id),
+                            "alert_type": alert.alert_type,
+                            "severity": alert.severity,
+                            "title": alert.title,
+                            "message": alert.message or "",
+                            "child_id": str(alert.child_id),
+                        },
+                    )
                 logger.info(f"{len(escalated)}件のアラートをエスカレーション")
             await session.commit()
     except Exception as e:
