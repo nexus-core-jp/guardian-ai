@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { useAlertStore } from '../stores/alertStore';
 import { childrenApi } from '../services/api';
 import { ChildLocationSocket } from '../services/location';
 import type { ChildLocation } from '../types';
@@ -10,6 +11,7 @@ export function useChildLocation(childId: string | undefined) {
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<ChildLocationSocket | null>(null);
   const accessToken = useAuthStore((s) => s.accessToken);
+  const fetchUnreadCount = useAlertStore((s) => s.fetchUnreadCount);
 
   const fetchLocation = useCallback(async () => {
     if (!childId) return;
@@ -35,16 +37,28 @@ export function useChildLocation(childId: string | undefined) {
     const socket = new ChildLocationSocket(childId, accessToken);
     socketRef.current = socket;
 
-    socket.connect((data) => {
-      setLocation(data);
-      setIsLoading(false);
-    });
+    socket.connect(
+      // 位置情報更新
+      (data) => {
+        // REST APIから取得した名前を保持
+        setLocation((prev) => ({
+          ...data,
+          childName: prev?.childName || data.childName,
+        }));
+        setIsLoading(false);
+      },
+      // リアルタイムアラート受信
+      (_alert) => {
+        // アラートストアの未読カウントを更新
+        fetchUnreadCount();
+      },
+    );
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [childId, accessToken]);
+  }, [childId, accessToken, fetchUnreadCount]);
 
   return { location, isLoading, error, refresh: fetchLocation };
 }

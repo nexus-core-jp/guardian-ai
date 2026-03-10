@@ -41,14 +41,14 @@ api.interceptors.response.use(
       try {
         const refreshToken = await getItem('refreshToken');
         if (refreshToken) {
-          const { data } = await axios.post<{ accessToken: string; refreshToken: string }>(
+          const { data } = await axios.post<{ access_token: string; refresh_token: string }>(
             `${API_URL}/auth/refresh`,
-            { refreshToken }
+            { refresh_token: refreshToken }
           );
-          await setItem('accessToken', data.accessToken);
-          await setItem('refreshToken', data.refreshToken);
+          await setItem('accessToken', data.access_token);
+          await setItem('refreshToken', data.refresh_token);
           if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+            originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           }
           return api(originalRequest);
         }
@@ -200,8 +200,8 @@ export const communityApi = {
 
 // Notifications
 export const notificationsApi = {
-  registerPushToken: (token: string, platform: 'ios' | 'android') =>
-    api.post('/notifications/register', { token, platform }).then((r) => r.data),
+  registerPushToken: (token: string, _platform: 'ios' | 'android') =>
+    api.put('/auth/fcm-token', null, { params: { fcm_token: token } }).then((r) => r.data),
 
   getPreferences: () =>
     api.get<NotificationPreferences>('/notifications/preferences').then((r) => r.data),

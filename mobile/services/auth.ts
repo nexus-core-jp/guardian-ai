@@ -38,7 +38,13 @@ export async function loginWithLine(): Promise<LoginResponse | null> {
   const result = await request.promptAsync(discovery);
 
   if (result.type === 'success' && result.params.code) {
-    const response = await authApi.loginWithLine(result.params.code, redirectUri);
+    const raw = await authApi.loginWithLine(result.params.code, redirectUri);
+    // バックエンドはsnake_case（access_token, refresh_token）で返す
+    const response: LoginResponse = {
+      accessToken: (raw as any).access_token ?? raw.accessToken,
+      refreshToken: (raw as any).refresh_token ?? raw.refreshToken,
+      user: raw.user,
+    };
     await useAuthStore.getState().login(response.user, response.accessToken, response.refreshToken);
     return response;
   }
