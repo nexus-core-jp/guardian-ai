@@ -10,6 +10,7 @@ from app.database import init_db, close_db
 from app.api.v1.router import v1_router
 from app.services.scheduler import start_scheduler, stop_scheduler
 from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.security import SecurityHeadersMiddleware
 
 settings = get_settings()
 
@@ -31,6 +32,9 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="子どもの安全を見守るAIプラットフォーム",
     lifespan=lifespan,
+    # 本番環境ではSwagger UIを無効化
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
 )
 
 # CORS設定
@@ -41,6 +45,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# セキュリティヘッダー
+app.add_middleware(SecurityHeadersMiddleware)
 
 # レートリミティング
 app.add_middleware(RateLimitMiddleware)

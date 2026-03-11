@@ -1,15 +1,31 @@
-"""レートリミティングミドルウェア"""
+"""レートリミティングミドルウェア（Redis対応）"""
 
 import time
 import logging
-from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
+
+# Redis接続（利用可能な場合）
+_redis_client = None
+
+try:
+    import redis.asyncio as aioredis
+    from app.config import get_settings
+    _settings = get_settings()
+    if _settings.REDIS_URL:
+        _redis_client = aioredis.from_url(
+            _settings.REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=2,
+        )
+        logger.info("Redisベースレートリミッター初期化")
+except Exception as e:
+    logger.info(f"Redisレートリミッターをスキップ、インメモリを使用: {e}")
 
 
 @dataclass
@@ -67,26 +83,21 @@ def _get_rate_group(path: str) -> str:
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     IPベースのレートリミティングミドルウェア。
-    トークンバケットアルゴリズムを使用。
-
-    本番環境ではRedisベースの分散レートリミッターに置き換えを推奨。
+    Redis利用可能時は分散レートリミッター、なければインメモリフォールバック。
     """
 
     def __init__(self, app):
         super().__init__(app)
-        # key: (client_ip, rate_group) -> RateBucket
         self._buckets: dict[tuple[str, str], RateBucket] = {}
         self._cleanup_counter = 0
 
     def _get_client_ip(self, request: Request) -> str:
-        """クライアントIPを取得する（プロキシ対応）"""
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
     def _get_bucket(self, client_ip: str, rate_group: str) -> RateBucket:
-        """バケットを取得または新規作成する"""
         key = (client_ip, rate_group)
         if key not in self._buckets:
             max_tokens, refill_rate = RATE_LIMITS.get(
@@ -101,32 +112,61 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return self._buckets[key]
 
     def _cleanup_stale_buckets(self):
-        """古いバケットをクリーンアップする（メモリリーク防止）"""
         self._cleanup_counter += 1
         if self._cleanup_counter < 1000:
             return
         self._cleanup_counter = 0
-
         now = time.monotonic()
         stale_keys = [
             k for k, b in self._buckets.items()
-            if now - b.last_refill > 600  # 10分以上アクセスなし
+            if now - b.last_refill > 600
         ]
         for k in stale_keys:
             del self._buckets[k]
 
+    async def _check_redis_rate_limit(self, client_ip: str, rate_group: str) -> tuple[bool, float]:
+        """Redisベースのスライディングウィンドウレートリミット"""
+        max_tokens, _ = RATE_LIMITS.get(rate_group, RATE_LIMITS["default"])
+        key = f"ratelimit:{rate_group}:{client_ip}"
+        window_seconds = 60
+
+        try:
+            pipe = _redis_client.pipeline()
+            now = time.time()
+            window_start = now - window_seconds
+
+            # 古いエントリを削除して現在のカウントを取得
+            pipe.zremrangebyscore(key, 0, window_start)
+            pipe.zcard(key)
+            pipe.zadd(key, {str(now): now})
+            pipe.expire(key, window_seconds + 1)
+            results = await pipe.execute()
+
+            current_count = results[1]
+            if current_count >= max_tokens:
+                return False, window_seconds / max_tokens
+            return True, 0.0
+        except Exception as e:
+            logger.warning(f"Redis レートリミットエラー、インメモリにフォールバック: {e}")
+            return True, 0.0
+
     async def dispatch(self, request: Request, call_next) -> Response:
-        # ヘルスチェックとWebSocketはスキップ
         path = request.url.path
         if path == "/health" or path.endswith("/ws"):
             return await call_next(request)
 
         client_ip = self._get_client_ip(request)
         rate_group = _get_rate_group(path)
-        bucket = self._get_bucket(client_ip, rate_group)
 
-        if not bucket.consume():
-            retry_after = bucket.retry_after
+        # Redis利用可能ならRedisベース、なければインメモリ
+        if _redis_client:
+            allowed, retry_after = await self._check_redis_rate_limit(client_ip, rate_group)
+        else:
+            bucket = self._get_bucket(client_ip, rate_group)
+            allowed = bucket.consume()
+            retry_after = bucket.retry_after if not allowed else 0.0
+
+        if not allowed:
             logger.warning(
                 f"レートリミット超過: ip={client_ip}, group={rate_group}, "
                 f"retry_after={retry_after:.1f}s"
@@ -139,5 +179,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 headers={"Retry-After": str(int(retry_after) + 1)},
             )
 
-        self._cleanup_stale_buckets()
+        if not _redis_client:
+            self._cleanup_stale_buckets()
         return await call_next(request)

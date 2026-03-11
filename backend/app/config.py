@@ -34,7 +34,7 @@ class Settings(BaseSettings):
 
     # Apple Sign-In
     APPLE_TEAM_ID: str = ""
-    APPLE_BUNDLE_ID: str = "com.guardianai.mobile"
+    APPLE_BUNDLE_ID: str = "com.guardianai.app"
 
     # Google Sign-In
     GOOGLE_CLIENT_ID: str = ""
