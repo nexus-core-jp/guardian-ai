@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants';
+import { router } from 'expo-router';
 import type { ChildLocation } from '../types';
 
 interface Props {
@@ -21,7 +22,9 @@ export default function ChildStatusCard({ childLocation, isLoading }: Props) {
   if (isLoading) {
     return (
       <View style={styles.card}>
-        <View style={styles.loadingDot} />
+        <View style={styles.loadingIconContainer}>
+          <ActivityIndicator size="small" color={Colors.primary} />
+        </View>
         <Text style={styles.loadingText}>位置情報を取得中...</Text>
       </View>
     );
@@ -30,8 +33,15 @@ export default function ChildStatusCard({ childLocation, isLoading }: Props) {
   if (!childLocation) {
     return (
       <View style={styles.card}>
-        <Ionicons name="location-outline" size={24} color={Colors.gray} />
-        <Text style={styles.noDataText}>位置情報がありません</Text>
+        <View style={styles.noDataContent}>
+          <Ionicons name="location-outline" size={24} color={Colors.gray} />
+          <Text style={styles.noDataText}>
+            {'お子様のGPSデバイスを接続すると\nリアルタイムで位置を確認できます'}
+          </Text>
+          <TouchableOpacity onPress={() => router.push('/(main)/settings')} activeOpacity={0.6}>
+            <Text style={styles.settingsLink}>設定 →</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -52,7 +62,7 @@ export default function ChildStatusCard({ childLocation, isLoading }: Props) {
         </Text>
       </View>
       <View style={styles.meta}>
-        <Text style={styles.time}>{timeStr}</Text>
+        <Text style={styles.time}>最終更新 {timeStr}</Text>
         {childLocation.batteryLevel != null && (
           <View style={styles.battery}>
             <Ionicons
@@ -120,21 +130,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.textSecondary,
   },
-  loadingDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.primary,
+  loadingIconContainer: {
     marginRight: 10,
-    opacity: 0.6,
   },
   loadingText: {
     fontSize: 14,
     color: Colors.textSecondary,
   },
+  noDataContent: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 6,
+  },
   noDataText: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.gray,
-    marginLeft: 8,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+  settingsLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });

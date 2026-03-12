@@ -16,6 +16,24 @@ import { loginWithLine, loginWithApple, loginWithGoogle } from '../../services/a
 import { authApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 
+const featureCards = [
+  {
+    icon: 'analytics-outline' as const,
+    title: 'AI安全ルート分析',
+    desc: '国土数値情報・警察庁犯罪データから最適な通学路を自動計算',
+  },
+  {
+    icon: 'newspaper-outline' as const,
+    title: '地域ニュース連携',
+    desc: '不審者情報・交通事故・工事情報をリアルタイムで通知',
+  },
+  {
+    icon: 'people-outline' as const,
+    title: '保護者見守りネット',
+    desc: '同じ地域の保護者同士で危険情報を共有・確認',
+  },
+];
+
 export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
@@ -104,7 +122,24 @@ export default function LoginScreen() {
             <Ionicons name="shield-checkmark" size={48} color={Colors.primary} />
           </View>
           <Text style={styles.appName}>Guardian AI</Text>
-          <Text style={styles.subtitle}>お子様の通学を{'\n'}AIが見守ります</Text>
+          <Text style={styles.subtitle}>
+            公的データとAIの力で{'\n'}お子様の通学路を安全に
+          </Text>
+        </View>
+
+        {/* Feature showcase cards */}
+        <View style={styles.featureSection}>
+          {featureCards.map((card, index) => (
+            <View key={index} style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <Ionicons name={card.icon} size={22} color={Colors.primary} />
+              </View>
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureTitle}>{card.title}</Text>
+                <Text style={styles.featureDesc}>{card.desc}</Text>
+              </View>
+            </View>
+          ))}
         </View>
 
         {/* Login buttons */}
@@ -197,7 +232,7 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 30,
   },
   logoCircle: {
     width: 100,
@@ -220,6 +255,42 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 26,
+  },
+  featureSection: {
+    gap: 10,
+    marginBottom: 28,
+  },
+  featureCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  featureIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: Colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  featureTextContainer: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  featureDesc: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    lineHeight: 16,
   },
   buttonSection: {
     gap: 12,

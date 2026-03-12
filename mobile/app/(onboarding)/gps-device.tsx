@@ -29,6 +29,9 @@ export default function GpsDeviceScreen() {
       <Text style={styles.description}>
         お子様が使用しているGPSデバイスを{'\n'}選んでください
       </Text>
+      <Text style={styles.helpNote}>
+        GPSデバイスと連携すると、リアルタイムの{'\n'}位置追跡と自動アラートが利用できます
+      </Text>
 
       <ScrollView
         style={styles.scrollView}
@@ -69,8 +72,9 @@ export default function GpsDeviceScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity onPress={() => handleNext('none')} activeOpacity={0.6}>
-          <Text style={styles.skipText}>あとで設定する</Text>
+          <Text style={styles.skipText}>GPSなしではじめる</Text>
         </TouchableOpacity>
+        <Text style={styles.skipNote}>※ あとから設定画面で追加できます</Text>
       </View>
     </SafeAreaView>
   );
@@ -94,6 +98,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 20,
+  },
+  helpNote: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 20,
   },
   scrollView: {
     flex: 1,
@@ -145,5 +156,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textSecondary,
     textDecorationLine: 'underline',
+  },
+  skipNote: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+    marginTop: 6,
   },
 });

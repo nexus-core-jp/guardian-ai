@@ -28,6 +28,8 @@ if (Platform.OS !== 'web') {
   PROVIDER_DEFAULT = Maps.PROVIDER_DEFAULT;
 }
 import DangerReportCard from '../../components/DangerReportCard';
+import LocalNewsCard from '../../components/LocalNewsCard';
+import type { LocalNews } from '../../components/LocalNewsCard';
 import { communityApi } from '../../services/api';
 import { getCurrentLocation } from '../../services/location';
 import type { DangerZone, DangerReport } from '../../types';
@@ -41,7 +43,44 @@ export default function CommunityScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentLat, setCurrentLat] = useState(35.6812);
   const [currentLng, setCurrentLng] = useState(139.7671);
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'news' | 'list' | 'map'>('news');
+  const [localNews] = useState<LocalNews[]>([
+    {
+      id: '1',
+      type: 'suspicious_person',
+      title: '不審者目撃情報 - 渋谷区神宮前付近',
+      summary: '本日15時頃、小学生に声をかける不審な男性が目撃されました。紺色のジャケット、30代くらい。',
+      source: '渋谷区安全・安心メール',
+      publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      location: '渋谷区神宮前',
+    },
+    {
+      id: '2',
+      type: 'traffic_accident',
+      title: '通学路で交通事故発生 - 明治通り交差点',
+      summary: '自転車と歩行者の接触事故が発生。該当交差点は一時通行止め。迂回ルートをご利用ください。',
+      source: '警視庁交通情報',
+      publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      location: '渋谷区千駄ヶ谷',
+    },
+    {
+      id: '3',
+      type: 'construction',
+      title: '道路工事のお知らせ - 表参道駅周辺',
+      summary: '3/15まで歩道の一部が通行止めになります。通学時は反対側の歩道をご利用ください。',
+      source: '渋谷区役所',
+      publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      location: '渋谷区神宮前4丁目',
+    },
+    {
+      id: '4',
+      type: 'weather',
+      title: '大雨警報発令中 - 東京都全域',
+      summary: '本日夕方から夜にかけて激しい雨の見込み。河川の増水に注意。下校時はお迎えを推奨します。',
+      source: '気象庁',
+      publishedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    },
+  ]);
 
   useEffect(() => {
     loadData();
@@ -123,11 +162,21 @@ export default function CommunityScreen() {
         <Text style={styles.headerTitle}>地域の安全情報</Text>
         <View style={styles.viewToggle}>
           <TouchableOpacity
+            style={[styles.toggleButton, viewMode === 'news' && styles.toggleActive]}
+            onPress={() => setViewMode('news')}
+          >
+            <Ionicons
+              name="newspaper"
+              size={18}
+              color={viewMode === 'news' ? Colors.primary : Colors.gray}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.toggleButton, viewMode === 'list' && styles.toggleActive]}
             onPress={() => setViewMode('list')}
           >
             <Ionicons
-              name="list"
+              name="warning"
               size={18}
               color={viewMode === 'list' ? Colors.primary : Colors.gray}
             />
@@ -149,6 +198,33 @@ export default function CommunityScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
+      ) : viewMode === 'news' ? (
+        /* Local news view */
+        <FlatList
+          data={localNews}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <LocalNewsCard news={item} />
+          )}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            <View style={styles.newsHeader}>
+              <Ionicons name="newspaper-outline" size={16} color={Colors.primary} />
+              <Text style={styles.newsHeaderText}>
+                近隣の安全に関するニュース・情報
+              </Text>
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="newspaper-outline" size={56} color={Colors.grayLight} />
+              <Text style={styles.emptyTitle}>ニュースはありません</Text>
+              <Text style={styles.emptyText}>
+                地域の安全ニュースがここに表示されます
+              </Text>
+            </View>
+          }
+        />
       ) : viewMode === 'map' ? (
         /* Heatmap view */
         <View style={styles.mapContainer}>
@@ -364,6 +440,18 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: 12,
     paddingBottom: 80,
+  },
+  newsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  newsHeaderText: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',

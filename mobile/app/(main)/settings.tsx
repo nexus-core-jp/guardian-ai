@@ -54,17 +54,21 @@ function SettingItem({ icon, label, value, onPress, showArrow = true, danger }: 
 interface ToggleItemProps {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  description?: string;
   value: boolean;
   onToggle: (value: boolean) => void;
 }
 
-function ToggleItem({ icon, label, value, onToggle }: ToggleItemProps) {
+function ToggleItem({ icon, label, description, value, onToggle }: ToggleItemProps) {
   return (
     <View style={styles.settingItem}>
       <View style={styles.settingIcon}>
         <Ionicons name={icon} size={20} color={Colors.primary} />
       </View>
-      <Text style={styles.settingLabel}>{label}</Text>
+      <View style={styles.toggleLabelContainer}>
+        <Text style={styles.settingLabel}>{label}</Text>
+        {description && <Text style={styles.toggleDesc}>{description}</Text>}
+      </View>
       <Switch
         value={value}
         onValueChange={onToggle}
@@ -221,14 +225,6 @@ export default function SettingsScreen() {
               router.push('/(onboarding)/school-select' as any);
             }}
           />
-          <SettingItem
-            icon="time-outline"
-            label="時間帯設定"
-            value="7:30 - 8:15"
-            onPress={() => {
-              Alert.alert('時間帯設定', '通学時間帯の設定は今後のアップデートで対応予定です。');
-            }}
-          />
         </View>
 
         {/* Notifications */}
@@ -237,32 +233,62 @@ export default function SettingsScreen() {
           <ToggleItem
             icon="navigate-outline"
             label="ルート逸脱"
+            description="通学路から外れた場合に通知"
             value={notifPrefs.routeDeviation}
             onToggle={(v) => updateNotifPref('routeDeviation', v)}
           />
           <ToggleItem
             icon="warning-outline"
             label="危険エリア接近"
+            description="不審者報告・事故多発地点に近づいた時"
             value={notifPrefs.dangerZone}
             onToggle={(v) => updateNotifPref('dangerZone', v)}
           />
           <ToggleItem
             icon="school-outline"
             label="学校到着"
+            description="お子様が学校に到着した時"
             value={notifPrefs.arrival}
             onToggle={(v) => updateNotifPref('arrival', v)}
           />
           <ToggleItem
             icon="exit-outline"
             label="学校出発"
+            description="お子様が学校を出発した時"
             value={notifPrefs.departure}
             onToggle={(v) => updateNotifPref('departure', v)}
           />
           <ToggleItem
             icon="people-outline"
             label="地域の報告"
+            description="近隣の保護者からの危険情報"
             value={notifPrefs.communityReports}
             onToggle={(v) => updateNotifPref('communityReports', v)}
+          />
+        </View>
+
+        {/* Data Sources */}
+        <Text style={styles.sectionTitle}>データソース</Text>
+        <View style={styles.section}>
+          <SettingItem
+            icon="map-outline"
+            label="国土数値情報（国土交通省）"
+            showArrow={false}
+          />
+          <SettingItem
+            icon="alert-circle-outline"
+            label="警察庁 犯罪統計データ"
+            showArrow={false}
+          />
+          <SettingItem
+            icon="newspaper-outline"
+            label="地域ニュース・不審者情報"
+            showArrow={false}
+          />
+          <SettingItem
+            icon="people-outline"
+            label="コミュニティ報告"
+            showArrow={false}
           />
         </View>
 
@@ -423,6 +449,16 @@ const styles = StyleSheet.create({
   settingValue: {
     fontSize: 13,
     color: Colors.textTertiary,
+  },
+  toggleLabelContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
+  toggleDesc: {
+    fontSize: 11,
+    color: Colors.textTertiary,
+    marginTop: 2,
+    lineHeight: 15,
   },
   version: {
     textAlign: 'center',

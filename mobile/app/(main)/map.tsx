@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants';
@@ -84,6 +84,7 @@ export default function MapScreen() {
         <View style={styles.topBar}>
           <View style={styles.appTitle}>
             <Ionicons name="shield-checkmark" size={20} color={Colors.primary} />
+            <Text style={styles.appTitleText}>Guardian AI</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -131,14 +132,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   appTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.white + 'E0',
     borderRadius: 20,
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  appTitleText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginLeft: 6,
   },
   centerButton: {
     position: 'absolute',

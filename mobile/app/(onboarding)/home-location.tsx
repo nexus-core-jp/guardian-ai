@@ -110,9 +110,9 @@ export default function HomeLocationScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <OnboardingProgress currentStep={0} totalSteps={4} />
-        <Text style={styles.title}>お子さまの情報</Text>
+        <Text style={styles.title}>お子さまと自宅の設定</Text>
         <Text style={styles.description}>
-          お子様のお名前と自宅の場所を{'\n'}設定してください
+          安全な通学ルートの計算に必要です
         </Text>
 
         {/* Child info section */}
@@ -181,6 +181,7 @@ export default function HomeLocationScreen() {
             )
           )}
         </View>
+        <Text style={styles.mapHint}>地図をタップして自宅の位置を調整できます</Text>
 
         {/* Address */}
         <View style={styles.addressSection}>
@@ -321,6 +322,12 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  mapHint: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: Colors.textTertiary,
+    paddingTop: 4,
   },
   markerContainer: {
     width: 40,

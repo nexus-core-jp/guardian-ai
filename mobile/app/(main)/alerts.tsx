@@ -73,11 +73,16 @@ export default function AlertsScreen() {
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="notifications-off-outline" size={56} color={Colors.grayLight} />
-              <Text style={styles.emptyTitle}>通知はありません</Text>
+              <Ionicons name="shield-checkmark-outline" size={56} color={Colors.grayLight} />
+              <Text style={styles.emptyTitle}>安全に通学中です</Text>
               <Text style={styles.emptyText}>
-                お子様の安全に関する通知がここに表示されます
+                {'ルート逸脱・危険エリア接近・不審者情報など\nお子様の安全に関する通知がここに表示されます'}
               </Text>
+              <View style={styles.alertTypesCard}>
+                <Text style={styles.alertTypesText}>
+                  通知の種類: ルート逸脱 / 危険エリア / 到着・出発 / 地域の報告
+                </Text>
+              </View>
             </View>
           }
           ListFooterComponent={
@@ -159,6 +164,16 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  alertTypesCard: {
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 16,
+  },
+  alertTypesText: {
+    fontSize: 12,
+    color: Colors.primary,
   },
   footer: {
     paddingVertical: 20,

@@ -51,7 +51,7 @@ export default function SchoolSelectScreen() {
       <OnboardingProgress currentStep={1} totalSteps={4} />
       <Text style={styles.title}>通学先の学校を選択</Text>
       <Text style={styles.description}>
-        お子様が通う学校を選んでください
+        通学路の安全分析に使用します。{'\n'}全国19,309校の小学校データから検索
       </Text>
 
       {isLoading ? (

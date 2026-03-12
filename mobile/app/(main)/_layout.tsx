@@ -56,7 +56,7 @@ export default function MainLayout() {
       <Tabs.Screen
         name="community"
         options={{
-          title: '地域',
+          title: '地域安全',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
           ),

@@ -77,6 +77,12 @@ export default function CompleteScreen() {
     }
   };
 
+  const truncatedAddress = onboarding.homeAddress
+    ? onboarding.homeAddress.length > 20
+      ? onboarding.homeAddress.slice(0, 20) + '...'
+      : onboarding.homeAddress
+    : '';
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <OnboardingProgress currentStep={3} totalSteps={4} />
@@ -89,6 +95,27 @@ export default function CompleteScreen() {
         <Text style={styles.schoolName}>
           {onboarding.schoolName || '学校'}への通学ルート
         </Text>
+      </View>
+
+      {/* Setup summary card */}
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryRow}>
+          <Ionicons name="person" size={16} color={Colors.primary} />
+          <Text style={styles.summaryLabel}>
+            {onboarding.childName || 'お子さま'}
+            {onboarding.childGrade ? ` (${onboarding.childGrade}年生)` : ''}
+          </Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Ionicons name="school" size={16} color={Colors.primary} />
+          <Text style={styles.summaryLabel}>{onboarding.schoolName || '未設定'}</Text>
+        </View>
+        {truncatedAddress ? (
+          <View style={styles.summaryRow}>
+            <Ionicons name="home" size={16} color={Colors.primary} />
+            <Text style={styles.summaryLabel}>{truncatedAddress}</Text>
+          </View>
+        ) : null}
       </View>
 
       {/* Route map */}
@@ -126,7 +153,7 @@ export default function CompleteScreen() {
       </View>
 
       <Text style={styles.message}>
-        明日の朝、最適なルートをお知らせします
+        AIが通学路の安全度を毎日分析してお知らせします
       </Text>
 
       <View style={styles.buttonContainer}>
@@ -154,7 +181,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   successIcon: {
     marginBottom: 8,
@@ -168,6 +195,24 @@ const styles = StyleSheet.create({
   schoolName: {
     fontSize: 15,
     color: Colors.textSecondary,
+  },
+  summaryCard: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+    backgroundColor: Colors.grayUltraLight,
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  summaryLabel: {
+    fontSize: 13,
+    color: Colors.text,
+    fontWeight: '500',
   },
   mapContainer: {
     flex: 1,
