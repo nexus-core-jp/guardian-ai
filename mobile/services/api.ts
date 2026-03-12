@@ -206,6 +206,14 @@ export const communityApi = {
 
   getHeatmap: (lat: number, lng: number, radius?: number) =>
     api.get('/community/heatmap', { params: { latitude: lat, longitude: lng, radius: radius || 3000 } }).then((r) => r.data),
+
+  getNews: (lat?: number, lng?: number, radius?: number) =>
+    api
+      .get<{ news: Array<{ id: string; type: string; title: string; summary: string; source: string; published_at: string; location?: string }>; total: number }>(
+        '/community/news',
+        { params: { lat, lng, radius: radius || 5000 } }
+      )
+      .then((r) => r.data),
 };
 
 // Notifications

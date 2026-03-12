@@ -363,6 +363,21 @@ async def dev_login(db: AsyncSession = Depends(get_db)):
     )
 
 
+@router.post("/logout", status_code=status.HTTP_200_OK, summary="ログアウト")
+async def logout(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    ログアウト処理。FCMトークンをクリアしてプッシュ通知を停止する。
+    JWT自体はステートレスのためサーバー側での無効化は行わない。
+    """
+    if current_user.fcm_token:
+        current_user.fcm_token = None
+        await db.flush()
+    return {"status": "ok", "message": "ログアウトしました"}
+
+
 @router.get("/me", response_model=UserResponse, summary="現在のユーザー情報")
 async def get_me(current_user: User = Depends(get_current_user)):
     """現在ログイン中のユーザー情報を返す"""

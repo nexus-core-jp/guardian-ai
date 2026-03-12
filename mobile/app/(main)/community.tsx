@@ -44,43 +44,7 @@ export default function CommunityScreen() {
   const [currentLat, setCurrentLat] = useState(35.6812);
   const [currentLng, setCurrentLng] = useState(139.7671);
   const [viewMode, setViewMode] = useState<'news' | 'list' | 'map'>('news');
-  const [localNews] = useState<LocalNews[]>([
-    {
-      id: '1',
-      type: 'suspicious_person',
-      title: '不審者目撃情報 - 渋谷区神宮前付近',
-      summary: '本日15時頃、小学生に声をかける不審な男性が目撃されました。紺色のジャケット、30代くらい。',
-      source: '渋谷区安全・安心メール',
-      publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      location: '渋谷区神宮前',
-    },
-    {
-      id: '2',
-      type: 'traffic_accident',
-      title: '通学路で交通事故発生 - 明治通り交差点',
-      summary: '自転車と歩行者の接触事故が発生。該当交差点は一時通行止め。迂回ルートをご利用ください。',
-      source: '警視庁交通情報',
-      publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      location: '渋谷区千駄ヶ谷',
-    },
-    {
-      id: '3',
-      type: 'construction',
-      title: '道路工事のお知らせ - 表参道駅周辺',
-      summary: '3/15まで歩道の一部が通行止めになります。通学時は反対側の歩道をご利用ください。',
-      source: '渋谷区役所',
-      publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      location: '渋谷区神宮前4丁目',
-    },
-    {
-      id: '4',
-      type: 'weather',
-      title: '大雨警報発令中 - 東京都全域',
-      summary: '本日夕方から夜にかけて激しい雨の見込み。河川の増水に注意。下校時はお迎えを推奨します。',
-      source: '気象庁',
-      publishedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    },
-  ]);
+  const [localNews, setLocalNews] = useState<LocalNews[]>([]);
 
   useEffect(() => {
     loadData();
@@ -94,12 +58,26 @@ export default function CommunityScreen() {
       setCurrentLng(loc.longitude);
     }
 
+    const lat = loc?.latitude || currentLat;
+    const lng = loc?.longitude || currentLng;
+
     try {
-      const zones = await communityApi.getDangerZones(
-        loc?.latitude || currentLat,
-        loc?.longitude || currentLng
-      );
+      const [zones, newsData] = await Promise.all([
+        communityApi.getDangerZones(lat, lng).catch(() => ({ danger_zones: [] })),
+        communityApi.getNews(lat, lng).catch(() => ({ news: [], total: 0 })),
+      ]);
       setDangerZones(zones.danger_zones);
+      setLocalNews(
+        newsData.news.map((item) => ({
+          id: item.id,
+          type: item.type as LocalNews['type'],
+          title: item.title,
+          summary: item.summary,
+          source: item.source,
+          publishedAt: item.published_at,
+          location: item.location,
+        }))
+      );
     } catch {
       // Show empty
     } finally {
