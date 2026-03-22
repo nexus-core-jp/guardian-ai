@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, Integer, Float, Text, DateTime, Enum, ForeignKey, func, Column
+from sqlalchemy import String, Integer, Float, Text, DateTime, Enum, ForeignKey, func, Column, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from geoalchemy2 import Geometry
@@ -76,7 +76,7 @@ class DangerZone(Base):
         default=False, comment="確認済みかどうか"
     )
     confirm_count: Mapped[int] = mapped_column(
-        Integer, default=0, comment="確認数"
+        Integer, default=0, server_default=text("0"), comment="確認数"
     )
     # PostGIS Geometry列（トリガーでlat/lngから自動生成）
     geom = Column(Geometry("POINT", srid=4326), nullable=True)

@@ -8,6 +8,9 @@ import pytest
 from jose import jwt
 
 from app.api.deps import create_access_token, create_refresh_token, verify_refresh_token
+from app.config import get_settings
+
+settings = get_settings()
 
 
 class TestJWTTokens:
@@ -20,7 +23,7 @@ class TestJWTTokens:
         assert isinstance(token, str)
 
         # トークンをデコードして内容を検証
-        payload = jwt.decode(token, "change-me-in-production", algorithms=["HS256"])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         assert payload["sub"] == str(user_id)
         assert payload["type"] == "access"
         assert "exp" in payload
@@ -31,7 +34,7 @@ class TestJWTTokens:
         token = create_refresh_token(user_id)
         assert token is not None
 
-        payload = jwt.decode(token, "change-me-in-production", algorithms=["HS256"])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         assert payload["sub"] == str(user_id)
         assert payload["type"] == "refresh"
 
