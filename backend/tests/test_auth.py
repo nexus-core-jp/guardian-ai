@@ -58,8 +58,9 @@ class TestJWTTokens:
     def test_verify_refresh_token_tampered(self):
         user_id = uuid.uuid4()
         token = create_refresh_token(user_id)
-        # トークンの最後の文字を変えて改ざん
-        tampered = token[:-1] + ("a" if token[-1] != "a" else "b")
+        # 署名部分を大幅に改ざん
+        parts = token.rsplit(".", 1)
+        tampered = parts[0] + ".INVALIDSIGNATURE"
         result = verify_refresh_token(tampered)
         assert result is None
 
