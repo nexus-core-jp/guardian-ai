@@ -1,6 +1,6 @@
 """PostGIS空間クエリユーティリティ"""
 
-from sqlalchemy import func, text
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 

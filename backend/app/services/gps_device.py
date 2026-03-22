@@ -3,12 +3,10 @@
 import hmac
 import hashlib
 import logging
-import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from dataclasses import dataclass
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

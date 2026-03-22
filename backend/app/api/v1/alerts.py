@@ -13,7 +13,6 @@ from app.schemas.alert import (
     AlertResponse,
     AlertListResponse,
     AlertUnreadCountResponse,
-    AlertMarkReadRequest,
 )
 from app.api.deps import get_current_user
 

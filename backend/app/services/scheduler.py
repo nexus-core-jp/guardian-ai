@@ -1,7 +1,6 @@
 """バックグラウンドタスクスケジューラー"""
 
 import logging
-from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger

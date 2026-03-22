@@ -3,12 +3,10 @@
 import csv
 import io
 import logging
-import uuid
-import random
 from datetime import datetime, timedelta, timezone
 
 import httpx
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_session_factory

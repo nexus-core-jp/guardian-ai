@@ -1,0 +1,10 @@
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+ignore = [
+    "E711",  # comparison-to-none - SQLAlchemy requires == None for queries
+    "E712",  # comparison-to-true-false - SQLAlchemy requires == True/False for queries
+    "F821",  # undefined-name - SQLAlchemy uses string forward references in Mapped[]
+    "F403",  # wildcard-import - used in schemas/__init__.py for re-exports
+]

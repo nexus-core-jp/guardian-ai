@@ -3,7 +3,7 @@
 import uuid
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -168,7 +168,7 @@ class AnomalyDetector:
         # ルートのウェイポイント（PostGIS LINESTRING）との距離を計算
         # 簡易実装: 出発地・目的地との距離で判定
         # 本来はST_Distance(point, linestring)を使用
-        min_distance = float("inf")
+        _min_distance = float("inf")  # TODO: use with ST_Distance
 
         # 直近の位置履歴からルートとの距離を推定
         recent_result = await self.db.execute(

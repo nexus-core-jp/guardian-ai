@@ -21,7 +21,7 @@ _fcm_initialized = False
 try:
     if settings.FCM_CREDENTIALS_PATH and Path(settings.FCM_CREDENTIALS_PATH).exists():
         import firebase_admin
-        from firebase_admin import credentials, messaging
+        from firebase_admin import credentials
 
         cred = credentials.Certificate(settings.FCM_CREDENTIALS_PATH)
         firebase_admin.initialize_app(cred)

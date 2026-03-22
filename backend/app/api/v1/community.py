@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

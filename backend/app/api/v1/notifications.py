@@ -1,6 +1,5 @@
 """通知設定エンドポイント"""
 
-import uuid
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel

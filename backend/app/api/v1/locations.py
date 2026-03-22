@@ -54,7 +54,7 @@ async def record_location(
     GPSデバイスまたはアプリから位置情報を記録する。
     異常検知も同時に実行し、必要に応じてアラートを生成する。
     """
-    child = await _verify_child_ownership(data.child_id, current_user.id, db)
+    _child = await _verify_child_ownership(data.child_id, current_user.id, db)
 
     # 位置情報を保存
     location = Location(
