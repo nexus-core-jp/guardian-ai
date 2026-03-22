@@ -47,7 +47,9 @@ async def list_children(
 
 
 @router.post(
-    "", response_model=ChildResponse, status_code=status.HTTP_201_CREATED,
+    "",
+    response_model=ChildResponse,
+    status_code=status.HTTP_201_CREATED,
     summary="子ども登録",
 )
 async def create_child(
@@ -126,7 +128,9 @@ async def update_child(
     return ChildResponse.model_validate(child)
 
 
-@router.delete("/{child_id}", status_code=status.HTTP_204_NO_CONTENT, summary="子ども削除")
+@router.delete(
+    "/{child_id}", status_code=status.HTTP_204_NO_CONTENT, summary="子ども削除"
+)
 async def delete_child(
     child_id: uuid.UUID,
     current_user: User = Depends(get_current_user),

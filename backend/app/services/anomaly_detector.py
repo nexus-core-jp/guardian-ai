@@ -16,6 +16,7 @@ from app.models.alert import AlertType, AlertSeverity
 @dataclass
 class AnomalyResult:
     """異常検知結果"""
+
     is_anomalous: bool
     anomaly_type: str | None = None
     severity: str = "info"
@@ -37,21 +38,21 @@ class AnomalyDetector:
     """
 
     # 小学生の歩行速度範囲 (m/s)
-    NORMAL_WALKING_SPEED_MIN = 0.5   # 0.5 m/s ≈ 1.8 km/h
-    NORMAL_WALKING_SPEED_MAX = 2.0   # 2.0 m/s ≈ 7.2 km/h
-    RUNNING_SPEED_MAX = 4.0          # 4.0 m/s ≈ 14.4 km/h
+    NORMAL_WALKING_SPEED_MIN = 0.5  # 0.5 m/s ≈ 1.8 km/h
+    NORMAL_WALKING_SPEED_MAX = 2.0  # 2.0 m/s ≈ 7.2 km/h
+    RUNNING_SPEED_MAX = 4.0  # 4.0 m/s ≈ 14.4 km/h
 
     # 車両速度の閾値 (m/s)
-    VEHICLE_SPEED_THRESHOLD = 8.0    # 8.0 m/s ≈ 28.8 km/h
+    VEHICLE_SPEED_THRESHOLD = 8.0  # 8.0 m/s ≈ 28.8 km/h
 
     # ルート逸脱の閾値（メートル）
-    ROUTE_DEVIATION_WARNING = 200    # 200m: 警告
-    ROUTE_DEVIATION_CRITICAL = 500   # 500m: 重大
+    ROUTE_DEVIATION_WARNING = 200  # 200m: 警告
+    ROUTE_DEVIATION_CRITICAL = 500  # 500m: 重大
 
     # 停止検知の閾値
-    STOP_SPEED_THRESHOLD = 0.3       # 0.3 m/s 以下は停止とみなす
-    STOP_DURATION_WARNING = 600      # 10分: 警告
-    STOP_DURATION_CRITICAL = 1800    # 30分: 重大
+    STOP_SPEED_THRESHOLD = 0.3  # 0.3 m/s 以下は停止とみなす
+    STOP_DURATION_WARNING = 600  # 10分: 警告
+    STOP_DURATION_CRITICAL = 1800  # 30分: 重大
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -84,9 +85,7 @@ class AnomalyDetector:
                 anomalies.append(speed_anomaly)
 
         # 2. ルート逸脱チェック
-        route_anomaly = await self._check_route_deviation(
-            child_id, latitude, longitude
-        )
+        route_anomaly = await self._check_route_deviation(child_id, latitude, longitude)
         if route_anomaly.is_anomalous:
             anomalies.append(route_anomaly)
 
@@ -154,11 +153,13 @@ class AnomalyDetector:
         """推奨ルートからの逸脱をチェックする"""
         # 推奨ルートを取得
         result = await self.db.execute(
-            select(Route).where(
+            select(Route)
+            .where(
                 Route.child_id == child_id,
                 Route.is_recommended == True,
                 Route.is_active == True,
-            ).limit(1)
+            )
+            .limit(1)
         )
         route = result.scalar_one_or_none()
 
@@ -190,11 +191,16 @@ class AnomalyDetector:
                 prev.latitude, prev.longitude, latitude, longitude
             )
             # 前回からの距離が異常に大きい場合
-            prev_ts = prev.timestamp.astimezone(timezone.utc) if prev.timestamp.tzinfo else prev.timestamp.replace(tzinfo=timezone.utc)
-            time_diff = (
-                datetime.now(timezone.utc) - prev_ts
-            ).total_seconds()
-            if time_diff > 0 and distance_from_prev / time_diff > self.VEHICLE_SPEED_THRESHOLD:
+            prev_ts = (
+                prev.timestamp.astimezone(timezone.utc)
+                if prev.timestamp.tzinfo
+                else prev.timestamp.replace(tzinfo=timezone.utc)
+            )
+            time_diff = (datetime.now(timezone.utc) - prev_ts).total_seconds()
+            if (
+                time_diff > 0
+                and distance_from_prev / time_diff > self.VEHICLE_SPEED_THRESHOLD
+            ):
                 return AnomalyResult(
                     is_anomalous=True,
                     anomaly_type=AlertType.ROUTE_DEVIATION,
@@ -242,10 +248,12 @@ class AnomalyDetector:
                 break
             stop_start = loc.timestamp
 
-        stop_start_utc = stop_start.astimezone(timezone.utc) if stop_start.tzinfo else stop_start.replace(tzinfo=timezone.utc)
-        stop_duration = (
-            datetime.now(timezone.utc) - stop_start_utc
-        ).total_seconds()
+        stop_start_utc = (
+            stop_start.astimezone(timezone.utc)
+            if stop_start.tzinfo
+            else stop_start.replace(tzinfo=timezone.utc)
+        )
+        stop_duration = (datetime.now(timezone.utc) - stop_start_utc).total_seconds()
 
         if stop_duration >= self.STOP_DURATION_CRITICAL:
             return AnomalyResult(
@@ -313,5 +321,8 @@ class AnomalyDetector:
         dphi = math.radians(lat2 - lat1)
         dlambda = math.radians(lng2 - lng1)
 
-        a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+        a = (
+            math.sin(dphi / 2) ** 2
+            + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+        )
         return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))

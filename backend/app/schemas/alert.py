@@ -35,6 +35,7 @@ class AlertUnreadCountResponse(BaseModel):
 
 class AlertMarkReadRequest(BaseModel):
     """アラート既読リクエスト"""
+
     alert_ids: list[uuid.UUID] | None = Field(
         None, description="既読にするアラートID（Noneで全件既読）"
     )
@@ -42,6 +43,7 @@ class AlertMarkReadRequest(BaseModel):
 
 class DangerZoneCreate(BaseModel):
     """危険エリア報告リクエスト"""
+
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
     radius_meters: float = Field(100, ge=10, le=5000, description="影響半径 (メートル)")
@@ -83,6 +85,7 @@ class HeatmapPoint(BaseModel):
 
 class HeatmapResponse(BaseModel):
     """安全ヒートマップデータ"""
+
     points: list[HeatmapPoint]
     center_latitude: float
     center_longitude: float

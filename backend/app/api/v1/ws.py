@@ -67,9 +67,9 @@ async def websocket_endpoint(
             try:
                 msg = json.loads(raw)
             except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({
-                    "type": "error", "message": "無効なJSONです"
-                }))
+                await websocket.send_text(
+                    json.dumps({"type": "error", "message": "無効なJSONです"})
+                )
                 continue
 
             action = msg.get("action")
@@ -80,13 +80,17 @@ async def websocket_endpoint(
                     try:
                         child_id = uuid.UUID(child_id_str)
                         ws_manager.subscribe(user_id, child_id)
-                        await websocket.send_text(json.dumps({
-                            "type": "subscribed", "child_id": str(child_id)
-                        }))
+                        await websocket.send_text(
+                            json.dumps(
+                                {"type": "subscribed", "child_id": str(child_id)}
+                            )
+                        )
                     except ValueError:
-                        await websocket.send_text(json.dumps({
-                            "type": "error", "message": "無効なchild_idです"
-                        }))
+                        await websocket.send_text(
+                            json.dumps(
+                                {"type": "error", "message": "無効なchild_idです"}
+                            )
+                        )
 
             elif action == "unsubscribe":
                 child_id_str = msg.get("child_id")
@@ -94,9 +98,11 @@ async def websocket_endpoint(
                     try:
                         child_id = uuid.UUID(child_id_str)
                         ws_manager.unsubscribe(user_id, child_id)
-                        await websocket.send_text(json.dumps({
-                            "type": "unsubscribed", "child_id": str(child_id)
-                        }))
+                        await websocket.send_text(
+                            json.dumps(
+                                {"type": "unsubscribed", "child_id": str(child_id)}
+                            )
+                        )
                     except ValueError:
                         pass
 
@@ -104,9 +110,9 @@ async def websocket_endpoint(
                 await websocket.send_text(json.dumps({"type": "pong"}))
 
             else:
-                await websocket.send_text(json.dumps({
-                    "type": "error", "message": f"不明なaction: {action}"
-                }))
+                await websocket.send_text(
+                    json.dumps({"type": "error", "message": f"不明なaction: {action}"})
+                )
 
     except WebSocketDisconnect:
         ws_manager.disconnect(user_id)

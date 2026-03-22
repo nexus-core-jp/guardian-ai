@@ -28,7 +28,11 @@ CRIME_CATEGORIES = {
     "自転車盗": {"risk_type": RiskType.CRIME, "risk_level": 3, "radius": 300},
     "車上ねらい": {"risk_type": RiskType.CRIME, "risk_level": 4, "radius": 200},
     "痴漢・わいせつ": {"risk_type": RiskType.CRIME, "risk_level": 8, "radius": 100},
-    "声かけ事案": {"risk_type": RiskType.SUSPICIOUS_PERSON, "risk_level": 6, "radius": 150},
+    "声かけ事案": {
+        "risk_type": RiskType.SUSPICIOUS_PERSON,
+        "risk_level": 6,
+        "radius": 150,
+    },
     "傷害": {"risk_type": RiskType.CRIME, "risk_level": 8, "radius": 100},
     "交通事故（死亡）": {"risk_type": RiskType.TRAFFIC, "risk_level": 9, "radius": 100},
     "交通事故（重傷）": {"risk_type": RiskType.TRAFFIC, "risk_level": 7, "radius": 150},
@@ -65,12 +69,14 @@ def _parse_csv(csv_text: str) -> list[dict]:
         lat = row.get("緯度") or row.get("latitude")
         lng = row.get("経度") or row.get("longitude")
         if lat and lng:
-            records.append({
-                "latitude": float(lat),
-                "longitude": float(lng),
-                "title": row.get("種別", row.get("罪名", "犯罪情報")),
-                "description": row.get("概要", ""),
-            })
+            records.append(
+                {
+                    "latitude": float(lat),
+                    "longitude": float(lng),
+                    "title": row.get("種別", row.get("罪名", "犯罪情報")),
+                    "description": row.get("概要", ""),
+                }
+            )
     return records
 
 
@@ -119,7 +125,9 @@ async def sync_crime_data() -> dict:
                 for record in new_data:
                     # 同一座標（半径50m以内）に既存データがあるかチェック
                     existing = await session.execute(
-                        select(func.count()).select_from(DangerZone).where(
+                        select(func.count())
+                        .select_from(DangerZone)
+                        .where(
                             DangerZone.latitude.between(
                                 record["latitude"] - 0.0005,
                                 record["latitude"] + 0.0005,

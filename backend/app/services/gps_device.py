@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DeviceLocation:
     """デバイスから受信した位置情報（正規化済み）"""
+
     device_id: str
     latitude: float
     longitude: float
@@ -40,7 +41,9 @@ class GPSDeviceAdapter(ABC):
     """GPSデバイスアダプタの基底クラス"""
 
     @abstractmethod
-    def parse_webhook(self, payload: dict, headers: dict | None = None) -> list[DeviceLocation]:
+    def parse_webhook(
+        self, payload: dict, headers: dict | None = None
+    ) -> list[DeviceLocation]:
         """Webhookペイロードをパースして正規化された位置情報リストを返す"""
         ...
 
@@ -75,7 +78,9 @@ class BoTAdapter(GPSDeviceAdapter):
     def __init__(self, webhook_secret: str = ""):
         self.webhook_secret = webhook_secret or settings.BOT_WEBHOOK_SECRET
 
-    def parse_webhook(self, payload: dict, headers: dict | None = None) -> list[DeviceLocation]:
+    def parse_webhook(
+        self, payload: dict, headers: dict | None = None
+    ) -> list[DeviceLocation]:
         device_id = payload.get("device_id", "")
         events = payload.get("events", [])
         locations = []
@@ -92,15 +97,17 @@ class BoTAdapter(GPSDeviceAdapter):
                 except (ValueError, AttributeError):
                     timestamp = datetime.now(timezone.utc)
 
-            locations.append(DeviceLocation(
-                device_id=device_id,
-                latitude=float(event["latitude"]),
-                longitude=float(event["longitude"]),
-                accuracy=event.get("accuracy"),
-                speed=event.get("speed"),
-                battery_level=event.get("battery"),
-                timestamp=timestamp or datetime.now(timezone.utc),
-            ))
+            locations.append(
+                DeviceLocation(
+                    device_id=device_id,
+                    latitude=float(event["latitude"]),
+                    longitude=float(event["longitude"]),
+                    accuracy=event.get("accuracy"),
+                    speed=event.get("speed"),
+                    battery_level=event.get("battery"),
+                    timestamp=timestamp or datetime.now(timezone.utc),
+                )
+            )
 
         return locations
 
@@ -139,7 +146,9 @@ class MitsuneAdapter(GPSDeviceAdapter):
     def __init__(self, api_key: str = ""):
         self.api_key = api_key or settings.MITSUNE_API_KEY
 
-    def parse_webhook(self, payload: dict, headers: dict | None = None) -> list[DeviceLocation]:
+    def parse_webhook(
+        self, payload: dict, headers: dict | None = None
+    ) -> list[DeviceLocation]:
         device_id = payload.get("imei", "")
         data_list = payload.get("data", [])
         locations = []
@@ -147,20 +156,23 @@ class MitsuneAdapter(GPSDeviceAdapter):
         for data in data_list:
             ts = data.get("ts")
             timestamp = (
-                datetime.fromtimestamp(ts, tz=timezone.utc) if ts
+                datetime.fromtimestamp(ts, tz=timezone.utc)
+                if ts
                 else datetime.now(timezone.utc)
             )
 
-            locations.append(DeviceLocation(
-                device_id=device_id,
-                latitude=float(data["lat"]),
-                longitude=float(data["lng"]),
-                altitude=data.get("alt"),
-                speed=data.get("spd"),
-                accuracy=data.get("acc"),
-                battery_level=data.get("bat"),
-                timestamp=timestamp,
-            ))
+            locations.append(
+                DeviceLocation(
+                    device_id=device_id,
+                    latitude=float(data["lat"]),
+                    longitude=float(data["lng"]),
+                    altitude=data.get("alt"),
+                    speed=data.get("spd"),
+                    accuracy=data.get("acc"),
+                    battery_level=data.get("bat"),
+                    timestamp=timestamp,
+                )
+            )
 
         return locations
 
@@ -190,7 +202,9 @@ class GenericAdapter(GPSDeviceAdapter):
     }
     """
 
-    def parse_webhook(self, payload: dict, headers: dict | None = None) -> list[DeviceLocation]:
+    def parse_webhook(
+        self, payload: dict, headers: dict | None = None
+    ) -> list[DeviceLocation]:
         ts = payload.get("timestamp")
         timestamp = None
         if ts:
@@ -199,17 +213,19 @@ class GenericAdapter(GPSDeviceAdapter):
             except (ValueError, AttributeError):
                 pass
 
-        return [DeviceLocation(
-            device_id=payload.get("device_id", "unknown"),
-            latitude=float(payload["latitude"]),
-            longitude=float(payload["longitude"]),
-            altitude=payload.get("altitude"),
-            speed=payload.get("speed"),
-            accuracy=payload.get("accuracy"),
-            heading=payload.get("heading"),
-            battery_level=payload.get("battery"),
-            timestamp=timestamp or datetime.now(timezone.utc),
-        )]
+        return [
+            DeviceLocation(
+                device_id=payload.get("device_id", "unknown"),
+                latitude=float(payload["latitude"]),
+                longitude=float(payload["longitude"]),
+                altitude=payload.get("altitude"),
+                speed=payload.get("speed"),
+                accuracy=payload.get("accuracy"),
+                heading=payload.get("heading"),
+                battery_level=payload.get("battery"),
+                timestamp=timestamp or datetime.now(timezone.utc),
+            )
+        ]
 
     def verify_signature(self, payload: bytes, signature: str) -> bool:
         return True

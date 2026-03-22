@@ -45,7 +45,9 @@ async def get_current_user(
 
         # トークンの有効期限チェック
         exp = payload.get("exp")
-        if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(timezone.utc):
+        if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(
+            timezone.utc
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="トークンの有効期限が切れています",
@@ -56,9 +58,7 @@ async def get_current_user(
             detail="トークンの検証に失敗しました",
         )
 
-    result = await db.execute(
-        select(User).where(User.id == uuid.UUID(user_id))
-    )
+    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
     user = result.scalar_one_or_none()
 
     if user is None:

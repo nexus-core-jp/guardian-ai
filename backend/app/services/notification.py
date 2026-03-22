@@ -92,9 +92,7 @@ class NotificationService:
             return False
 
         # ユーザーのFCMトークンを取得
-        result = await db.execute(
-            select(User.fcm_token).where(User.id == user_id)
-        )
+        result = await db.execute(select(User.fcm_token).where(User.id == user_id))
         fcm_token = result.scalar_one_or_none()
 
         if not fcm_token:
@@ -145,7 +143,9 @@ class NotificationService:
     ) -> bool:
         """アラート通知を送信する"""
         severity = AlertSeverity(alert.severity)
-        config = NOTIFICATION_CONFIG.get(severity, NOTIFICATION_CONFIG[AlertSeverity.INFO])
+        config = NOTIFICATION_CONFIG.get(
+            severity, NOTIFICATION_CONFIG[AlertSeverity.INFO]
+        )
 
         # 重要度に応じたプレフィックス
         prefix_map = {

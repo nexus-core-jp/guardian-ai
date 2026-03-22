@@ -39,16 +39,20 @@ class UserResponse(UserBase):
 
 class OnboardingRequest(BaseModel):
     """初期セットアップリクエスト"""
+
     home_latitude: float = Field(..., ge=-90, le=90, description="自宅の緯度")
     home_longitude: float = Field(..., ge=-180, le=180, description="自宅の経度")
     school_id: uuid.UUID | None = Field(None, description="学校ID")
     school_name: str | None = Field(None, description="学校名（新規登録用）")
-    child_name: str = Field(..., min_length=1, max_length=100, description="子どもの名前")
+    child_name: str = Field(
+        ..., min_length=1, max_length=100, description="子どもの名前"
+    )
     child_grade: int | None = Field(None, ge=1, le=6, description="学年")
 
 
 class OnboardingResponse(BaseModel):
     """初期セットアップレスポンス"""
+
     user: UserResponse
     child_id: uuid.UUID
     recommended_route_id: uuid.UUID | None = None
@@ -57,6 +61,7 @@ class OnboardingResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     """認証トークンレスポンス"""
+
     access_token: str
     refresh_token: str | None = None
     token_type: str = "bearer"
@@ -65,17 +70,20 @@ class TokenResponse(BaseModel):
 
 class LINELoginRequest(BaseModel):
     """LINE ログインリクエスト"""
+
     code: str = Field(..., description="LINE認証コード")
     state: str | None = Field(None, description="CSRFトークン")
 
 
 class RefreshTokenRequest(BaseModel):
     """トークンリフレッシュリクエスト"""
+
     refresh_token: str = Field(..., description="リフレッシュトークン")
 
 
 class RefreshTokenResponse(BaseModel):
     """トークンリフレッシュレスポンス"""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -83,6 +91,7 @@ class RefreshTokenResponse(BaseModel):
 
 class AppleLoginRequest(BaseModel):
     """Apple Sign-Inリクエスト"""
+
     id_token: str = Field(..., description="Apple ID Token (JWT)")
     authorization_code: str | None = Field(None, description="Apple Authorization Code")
     full_name: str | None = Field(None, description="ユーザー名（初回ログイン時のみ）")
@@ -90,4 +99,5 @@ class AppleLoginRequest(BaseModel):
 
 class GoogleLoginRequest(BaseModel):
     """Googleログインリクエスト"""
+
     id_token: str = Field(..., description="Google ID Token")

@@ -40,8 +40,8 @@ async def list_alerts(
         query = query.where(Alert.is_read == is_read)
 
     # 総件数（同じフィルターを適用）
-    count_query = select(func.count()).select_from(Alert).where(
-        Alert.user_id == current_user.id
+    count_query = (
+        select(func.count()).select_from(Alert).where(Alert.user_id == current_user.id)
     )
     if severity:
         count_query = count_query.where(Alert.severity == severity)
@@ -53,8 +53,10 @@ async def list_alerts(
     total = count_result.scalar() or 0
 
     # 未読件数
-    unread_query = select(func.count()).select_from(Alert).where(
-        Alert.user_id == current_user.id, Alert.is_read == False
+    unread_query = (
+        select(func.count())
+        .select_from(Alert)
+        .where(Alert.user_id == current_user.id, Alert.is_read == False)
     )
     unread_result = await db.execute(unread_query)
     unread_count = unread_result.scalar() or 0
@@ -71,14 +73,18 @@ async def list_alerts(
     )
 
 
-@router.get("/unread", response_model=AlertUnreadCountResponse, summary="未読アラート件数")
+@router.get(
+    "/unread", response_model=AlertUnreadCountResponse, summary="未読アラート件数"
+)
 async def get_unread_count(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """未読アラートの件数を取得する"""
     result = await db.execute(
-        select(func.count()).select_from(Alert).where(
+        select(func.count())
+        .select_from(Alert)
+        .where(
             Alert.user_id == current_user.id,
             Alert.is_read == False,
         )
@@ -88,7 +94,9 @@ async def get_unread_count(
     return AlertUnreadCountResponse(unread_count=count)
 
 
-@router.put("/{alert_id}/read", response_model=AlertResponse, summary="アラートを既読にする")
+@router.put(
+    "/{alert_id}/read", response_model=AlertResponse, summary="アラートを既読にする"
+)
 async def mark_alert_read(
     alert_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -116,7 +124,11 @@ async def mark_alert_read(
     return AlertResponse.model_validate(alert)
 
 
-@router.put("/{alert_id}/resolve", response_model=AlertResponse, summary="アラートを解決済みにする")
+@router.put(
+    "/{alert_id}/resolve",
+    response_model=AlertResponse,
+    summary="アラートを解決済みにする",
+)
 async def resolve_alert(
     alert_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -147,7 +159,11 @@ async def resolve_alert(
     return AlertResponse.model_validate(alert)
 
 
-@router.put("/read-all", response_model=AlertUnreadCountResponse, summary="全アラートを既読にする")
+@router.put(
+    "/read-all",
+    response_model=AlertUnreadCountResponse,
+    summary="全アラートを既読にする",
+)
 async def mark_all_read(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

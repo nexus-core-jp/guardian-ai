@@ -11,16 +11,17 @@ from app.models.danger_zone import DangerZone, RiskType
 
 
 class TimeOfDay(str, Enum):
-    MORNING = "morning"      # 6-9時
-    DAYTIME = "daytime"      # 9-15時
+    MORNING = "morning"  # 6-9時
+    DAYTIME = "daytime"  # 9-15時
     AFTERNOON = "afternoon"  # 15-18時
-    EVENING = "evening"      # 18-21時
-    NIGHT = "night"          # 21-6時
+    EVENING = "evening"  # 18-21時
+    NIGHT = "night"  # 21-6時
 
 
 @dataclass
 class RiskScoreBreakdown:
     """リスクスコアの内訳"""
+
     overall: float
     crime_risk: float
     traffic_risk: float
@@ -32,6 +33,7 @@ class RiskScoreBreakdown:
 @dataclass
 class AreaRiskResult:
     """エリアリスク分析結果"""
+
     latitude: float
     longitude: float
     radius_meters: float
@@ -112,8 +114,10 @@ class DangerAnalyzer:
 
         for zone in danger_zones:
             weight = self.RISK_WEIGHTS.get(
-                RiskType(zone.risk_type) if isinstance(zone.risk_type, str) else zone.risk_type,
-                1.0
+                RiskType(zone.risk_type)
+                if isinstance(zone.risk_type, str)
+                else zone.risk_type,
+                1.0,
             )
             weighted_score = zone.risk_level * weight * time_multiplier
 
@@ -206,8 +210,8 @@ class DangerAnalyzer:
                     DangerZone.latitude <= latitude + lat_range,
                     DangerZone.longitude >= longitude - lng_range,
                     DangerZone.longitude <= longitude + lng_range,
-                    (DangerZone.expires_at == None) |
-                    (DangerZone.expires_at > datetime.now(timezone.utc)),
+                    (DangerZone.expires_at == None)
+                    | (DangerZone.expires_at > datetime.now(timezone.utc)),
                 )
             )
             return list(result.scalars().all())
@@ -237,9 +241,13 @@ class DangerAnalyzer:
         messages = []
 
         if overall_risk >= 7:
-            messages.append("⚠️ このエリアは現在リスクが高い状態です。できるだけ別のルートを使用してください。")
+            messages.append(
+                "⚠️ このエリアは現在リスクが高い状態です。できるだけ別のルートを使用してください。"
+            )
         elif overall_risk >= 5:
-            messages.append("このエリアには注意が必要です。お子様の見守りを強化してください。")
+            messages.append(
+                "このエリアには注意が必要です。お子様の見守りを強化してください。"
+            )
         else:
             messages.append("このエリアは比較的安全です。")
 

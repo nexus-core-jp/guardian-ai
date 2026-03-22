@@ -1,6 +1,5 @@
 """通知設定エンドポイント"""
 
-
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -32,7 +31,11 @@ class NotificationPreferencesUpdate(BaseModel):
     community_reports: bool | None = None
 
 
-@router.get("/preferences", response_model=NotificationPreferencesResponse, summary="通知設定取得")
+@router.get(
+    "/preferences",
+    response_model=NotificationPreferencesResponse,
+    summary="通知設定取得",
+)
 async def get_preferences(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -52,7 +55,11 @@ async def get_preferences(
     return NotificationPreferencesResponse.model_validate(prefs)
 
 
-@router.patch("/preferences", response_model=NotificationPreferencesResponse, summary="通知設定更新")
+@router.patch(
+    "/preferences",
+    response_model=NotificationPreferencesResponse,
+    summary="通知設定更新",
+)
 async def update_preferences(
     data: NotificationPreferencesUpdate,
     current_user: User = Depends(get_current_user),

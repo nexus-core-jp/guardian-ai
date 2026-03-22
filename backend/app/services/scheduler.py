@@ -29,6 +29,7 @@ async def escalation_check_job() -> None:
             if escalated:
                 # エスカレーションされたアラートをWebSocket経由でもブロードキャスト
                 from app.services.websocket_manager import ws_manager
+
                 for alert in escalated:
                     await ws_manager.broadcast_alert(
                         child_id=str(alert.child_id),
@@ -94,7 +95,11 @@ async def stale_location_check_job() -> None:
                     continue
 
                 minutes_ago = int(
-                    (datetime.now(timezone.utc) - latest_ts.replace(tzinfo=timezone.utc)).total_seconds() / 60
+                    (
+                        datetime.now(timezone.utc)
+                        - latest_ts.replace(tzinfo=timezone.utc)
+                    ).total_seconds()
+                    / 60
                 )
 
                 await alert_service.create_alert(
@@ -119,6 +124,7 @@ async def crime_data_sync_job() -> None:
     logger.info("犯罪データ定期同期開始")
     try:
         from app.services.crime_data_sync import sync_crime_data
+
         stats = await sync_crime_data()
         logger.info(f"犯罪データ同期結果: {stats}")
     except Exception as e:

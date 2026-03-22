@@ -72,20 +72,25 @@ class AlertService:
         """アラートを作成する"""
         # 同じ種別の未解決アラートがないか確認（重複防止）
         existing = await self.db.execute(
-            select(Alert).where(
+            select(Alert)
+            .where(
                 Alert.child_id == child_id,
                 Alert.alert_type == alert_type,
                 Alert.is_resolved == False,
-            ).order_by(desc(Alert.created_at)).limit(1)
+            )
+            .order_by(desc(Alert.created_at))
+            .limit(1)
         )
         existing_alert = existing.scalar_one_or_none()
 
         if existing_alert:
             # 5分以内の同じアラートは重複として無視
-            created_utc = existing_alert.created_at.astimezone(timezone.utc) if existing_alert.created_at.tzinfo else existing_alert.created_at.replace(tzinfo=timezone.utc)
-            time_diff = (
-                datetime.now(timezone.utc) - created_utc
-            ).total_seconds()
+            created_utc = (
+                existing_alert.created_at.astimezone(timezone.utc)
+                if existing_alert.created_at.tzinfo
+                else existing_alert.created_at.replace(tzinfo=timezone.utc)
+            )
+            time_diff = (datetime.now(timezone.utc) - created_utc).total_seconds()
             if time_diff < 300:
                 return existing_alert
 
@@ -203,9 +208,7 @@ class AlertService:
 
     async def resolve_alert(self, alert_id: uuid.UUID) -> Alert | None:
         """アラートを解決済みにする"""
-        result = await self.db.execute(
-            select(Alert).where(Alert.id == alert_id)
-        )
+        result = await self.db.execute(select(Alert).where(Alert.id == alert_id))
         alert = result.scalar_one_or_none()
 
         if alert is None:

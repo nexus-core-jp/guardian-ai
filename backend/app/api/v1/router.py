@@ -2,7 +2,19 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, children, locations, routes, alerts, community, schools, ws, devices, settings, notifications
+from app.api.v1 import (
+    auth,
+    children,
+    locations,
+    routes,
+    alerts,
+    community,
+    schools,
+    ws,
+    devices,
+    settings,
+    notifications,
+)
 
 v1_router = APIRouter(tags=["v1"])
 
@@ -15,5 +27,7 @@ v1_router.include_router(community.router, prefix="/community", tags=["コミュ
 v1_router.include_router(schools.router, prefix="/schools", tags=["学校検索"])
 v1_router.include_router(devices.router, prefix="/devices", tags=["GPSデバイス"])
 v1_router.include_router(settings.router, prefix="/settings", tags=["設定"])
-v1_router.include_router(notifications.router, prefix="/notifications", tags=["通知設定"])
+v1_router.include_router(
+    notifications.router, prefix="/notifications", tags=["通知設定"]
+)
 v1_router.include_router(ws.router, tags=["WebSocket"])

@@ -12,6 +12,7 @@ class RoutePoint(BaseModel):
 
 class RouteCalculateRequest(BaseModel):
     """ルート計算リクエスト"""
+
     origin: RoutePoint
     destination: RoutePoint
     child_id: uuid.UUID | None = None
@@ -52,6 +53,7 @@ class RouteListResponse(BaseModel):
 
 class SafetyScoreBreakdown(BaseModel):
     """安全スコアの内訳"""
+
     overall: float = Field(..., ge=0, le=10)
     traffic_safety: float = Field(..., ge=0, le=10)
     crime_safety: float = Field(..., ge=0, le=10)
@@ -61,6 +63,7 @@ class SafetyScoreBreakdown(BaseModel):
 
 class RouteCalculateResponse(BaseModel):
     """ルート計算レスポンス"""
+
     route: RouteResponse
     safety_breakdown: SafetyScoreBreakdown
     alternative_routes: list[RouteResponse] = []

@@ -147,7 +147,9 @@ def _build_sample_news() -> list[dict]:
     ]
 
 
-def _haversine_approx_meters(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+def _haversine_approx_meters(
+    lat1: float, lng1: float, lat2: float, lng2: float
+) -> float:
     """簡易距離計算 (メートル)。日本付近で十分な精度。"""
     dlat = abs(lat1 - lat2) * 111_000
     dlng = abs(lng1 - lng2) * 91_000  # cos(35deg) ≈ 0.82
@@ -195,7 +197,9 @@ async def get_local_news(
     return LocalNewsListResponse(news=news, total=len(news))
 
 
-@router.get("/dangers", response_model=DangerZoneListResponse, summary="近隣の危険エリア一覧")
+@router.get(
+    "/dangers", response_model=DangerZoneListResponse, summary="近隣の危険エリア一覧"
+)
 async def list_danger_zones(
     latitude: float = Query(..., ge=-90, le=90, description="中心緯度"),
     longitude: float = Query(..., ge=-180, le=180, description="中心経度"),
@@ -227,8 +231,8 @@ async def list_danger_zones(
 
     # 有効期限チェック
     query = query.where(
-        (DangerZone.expires_at == None) |
-        (DangerZone.expires_at > datetime.now(timezone.utc))
+        (DangerZone.expires_at == None)
+        | (DangerZone.expires_at > datetime.now(timezone.utc))
     )
 
     result = await db.execute(query.order_by(DangerZone.risk_level.desc()))
@@ -241,7 +245,8 @@ async def list_danger_zones(
 
 
 @router.post(
-    "/dangers", response_model=DangerZoneResponse,
+    "/dangers",
+    response_model=DangerZoneResponse,
     status_code=status.HTTP_201_CREATED,
     summary="危険エリアを報告",
 )
@@ -287,6 +292,7 @@ async def confirm_danger_zone(
     確認数が増えるほど信頼度が上がる。3件以上で verified フラグが立つ。
     """
     import uuid as _uuid
+
     result = await db.execute(
         select(DangerZone).where(DangerZone.id == _uuid.UUID(zone_id))
     )
@@ -308,7 +314,9 @@ async def confirm_danger_zone(
     return DangerZoneResponse.model_validate(zone)
 
 
-@router.get("/heatmap", response_model=HeatmapResponse, summary="安全ヒートマップデータ")
+@router.get(
+    "/heatmap", response_model=HeatmapResponse, summary="安全ヒートマップデータ"
+)
 async def get_safety_heatmap(
     latitude: float = Query(..., ge=-90, le=90, description="中心緯度"),
     longitude: float = Query(..., ge=-180, le=180, description="中心経度"),
@@ -332,8 +340,8 @@ async def get_safety_heatmap(
             DangerZone.latitude <= latitude + lat_range,
             DangerZone.longitude >= longitude - lng_range,
             DangerZone.longitude <= longitude + lng_range,
-            (DangerZone.expires_at == None) |
-            (DangerZone.expires_at > datetime.now(timezone.utc)),
+            (DangerZone.expires_at == None)
+            | (DangerZone.expires_at > datetime.now(timezone.utc)),
         )
     )
     zones = result.scalars().all()

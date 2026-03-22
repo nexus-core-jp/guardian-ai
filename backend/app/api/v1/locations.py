@@ -42,7 +42,9 @@ async def _verify_child_ownership(
 
 
 @router.post(
-    "", response_model=LocationResponse, status_code=status.HTTP_201_CREATED,
+    "",
+    response_model=LocationResponse,
+    status_code=status.HTTP_201_CREATED,
     summary="位置情報を記録",
 )
 async def record_location(
@@ -111,7 +113,8 @@ async def record_location(
 
 
 @router.get(
-    "/{child_id}/latest", response_model=LatestLocationResponse,
+    "/{child_id}/latest",
+    response_model=LatestLocationResponse,
     summary="最新位置情報を取得",
 )
 async def get_latest_location(
@@ -139,7 +142,8 @@ async def get_latest_location(
 
 
 @router.get(
-    "/{child_id}/history", response_model=LocationHistoryResponse,
+    "/{child_id}/history",
+    response_model=LocationHistoryResponse,
     summary="位置情報履歴を取得",
 )
 async def get_location_history(
@@ -166,8 +170,8 @@ async def get_location_history(
     locations = result.scalars().all()
 
     # 総件数
-    count_query = select(func.count()).select_from(Location).where(
-        Location.child_id == child_id
+    count_query = (
+        select(func.count()).select_from(Location).where(Location.child_id == child_id)
     )
     if start_time:
         count_query = count_query.where(Location.timestamp >= start_time)

@@ -32,6 +32,7 @@ OSRM_BASE_URL = "https://router.project-osrm.org"
 @dataclass
 class RiskFactor:
     """リスク要因"""
+
     latitude: float
     longitude: float
     risk_level: int
@@ -98,15 +99,20 @@ class RouteEngine:
 
         if high_risk_zones and avoid_danger_zones:
             detour_wp = self._compute_detour_waypoint(
-                origin_lat, origin_lng,
-                destination_lat, destination_lng,
+                origin_lat,
+                origin_lng,
+                destination_lat,
+                destination_lng,
                 high_risk_zones,
             )
             if detour_wp:
                 alt_geometry = await self._fetch_osrm_route(
-                    origin_lat, origin_lng,
-                    destination_lat, destination_lng,
-                    via_lat=detour_wp[0], via_lng=detour_wp[1],
+                    origin_lat,
+                    origin_lng,
+                    destination_lat,
+                    destination_lng,
+                    via_lat=detour_wp[0],
+                    via_lng=detour_wp[1],
                 )
                 if alt_geometry:
                     alt_waypoints = self._geometry_to_waypoints(alt_geometry)
@@ -120,7 +126,9 @@ class RouteEngine:
                         child_id=child_id or uuid.uuid4(),
                         name="迂回ルート",
                         origin=RoutePoint(latitude=origin_lat, longitude=origin_lng),
-                        destination=RoutePoint(latitude=destination_lat, longitude=destination_lng),
+                        destination=RoutePoint(
+                            latitude=destination_lat, longitude=destination_lng
+                        ),
                         waypoints=alt_waypoints,
                         distance_meters=alt_distance,
                         estimated_duration_minutes=alt_duration,
@@ -144,7 +152,10 @@ class RouteEngine:
 
         # 迂回ルートの方が安全スコアが高い場合はそちらを推奨
         main_is_recommended = True
-        if alternative_routes and alternative_routes[0].safety_score > safety_breakdown.overall:
+        if (
+            alternative_routes
+            and alternative_routes[0].safety_score > safety_breakdown.overall
+        ):
             main_is_recommended = False
             alternative_routes[0].is_recommended = True
 
@@ -173,7 +184,9 @@ class RouteEngine:
                 child_id=child_id,
                 name=route.name,
                 origin=RoutePoint(latitude=origin_lat, longitude=origin_lng),
-                destination=RoutePoint(latitude=destination_lat, longitude=destination_lng),
+                destination=RoutePoint(
+                    latitude=destination_lat, longitude=destination_lng
+                ),
                 waypoints=waypoints,
                 distance_meters=distance,
                 estimated_duration_minutes=estimated_minutes,
@@ -189,7 +202,9 @@ class RouteEngine:
                 child_id=child_id or uuid.uuid4(),
                 name="計算ルート",
                 origin=RoutePoint(latitude=origin_lat, longitude=origin_lng),
-                destination=RoutePoint(latitude=destination_lat, longitude=destination_lng),
+                destination=RoutePoint(
+                    latitude=destination_lat, longitude=destination_lng
+                ),
                 waypoints=waypoints,
                 distance_meters=distance,
                 estimated_duration_minutes=estimated_minutes,
@@ -213,9 +228,12 @@ class RouteEngine:
 
     async def _fetch_osrm_route(
         self,
-        origin_lat: float, origin_lng: float,
-        dest_lat: float, dest_lng: float,
-        via_lat: float | None = None, via_lng: float | None = None,
+        origin_lat: float,
+        origin_lng: float,
+        dest_lat: float,
+        dest_lng: float,
+        via_lat: float | None = None,
+        via_lng: float | None = None,
     ) -> list[tuple[float, float]] | None:
         """
         OSRM（またはMapbox）から道路ネットワーク上のルートを取得する。
@@ -274,8 +292,10 @@ class RouteEngine:
 
     def _fallback_geometry(
         self,
-        origin_lat: float, origin_lng: float,
-        dest_lat: float, dest_lng: float,
+        origin_lat: float,
+        origin_lng: float,
+        dest_lat: float,
+        dest_lng: float,
         num_points: int = 10,
     ) -> list[tuple[float, float]]:
         """OSRM到達不能時のフォールバック: 直線補間ジオメトリ"""
@@ -293,8 +313,10 @@ class RouteEngine:
 
     def _compute_detour_waypoint(
         self,
-        origin_lat: float, origin_lng: float,
-        dest_lat: float, dest_lng: float,
+        origin_lat: float,
+        origin_lng: float,
+        dest_lat: float,
+        dest_lng: float,
         high_risk_zones: list[RiskFactor],
     ) -> tuple[float, float] | None:
         """
@@ -312,13 +334,17 @@ class RouteEngine:
         if total_weight == 0:
             return None
 
-        danger_center_lat = sum(z.latitude * z.risk_level for z in high_risk_zones) / total_weight
-        danger_center_lng = sum(z.longitude * z.risk_level for z in high_risk_zones) / total_weight
+        danger_center_lat = (
+            sum(z.latitude * z.risk_level for z in high_risk_zones) / total_weight
+        )
+        danger_center_lng = (
+            sum(z.longitude * z.risk_level for z in high_risk_zones) / total_weight
+        )
 
         # 中点→危険重心のベクトルを求め、反対方向にオフセット
         dlat = mid_lat - danger_center_lat
         dlng = mid_lng - danger_center_lng
-        norm = math.sqrt(dlat ** 2 + dlng ** 2)
+        norm = math.sqrt(dlat**2 + dlng**2)
 
         if norm < 1e-8:
             # ルートの法線方向にオフセット
@@ -326,7 +352,7 @@ class RouteEngine:
             route_dlng = dest_lng - origin_lng
             dlat = -route_dlng
             dlng = route_dlat
-            norm = math.sqrt(dlat ** 2 + dlng ** 2)
+            norm = math.sqrt(dlat**2 + dlng**2)
             if norm < 1e-8:
                 return None
 
@@ -364,7 +390,9 @@ class RouteEngine:
 
         # 最後の点は必ず含める
         lat, lng = geometry[-1]
-        waypoints.append(RouteWaypoint(latitude=lat, longitude=lng, order=max_points - 1))
+        waypoints.append(
+            RouteWaypoint(latitude=lat, longitude=lng, order=max_points - 1)
+        )
         return waypoints
 
     # ------------------------------------------------------------------ #
@@ -397,7 +425,9 @@ class RouteEngine:
             for zone in danger_zones:
                 # サンプル点からの最短距離
                 min_dist = min(
-                    self._haversine_distance(pt[0], pt[1], zone.latitude, zone.longitude)
+                    self._haversine_distance(
+                        pt[0], pt[1], zone.latitude, zone.longitude
+                    )
                     for pt in sample_points
                 )
                 zone_radius = zone.radius_meters or 100.0
@@ -407,7 +437,9 @@ class RouteEngine:
                     proximity_factor = 1.0
                 elif min_dist < zone_radius * 3:
                     # ゾーン周辺: 距離に応じて減衰
-                    proximity_factor = 1.0 - (min_dist - zone_radius) / (zone_radius * 2)
+                    proximity_factor = 1.0 - (min_dist - zone_radius) / (
+                        zone_radius * 2
+                    )
                 else:
                     # 遠い: ペナルティなし
                     proximity_factor = 0.0
@@ -461,31 +493,36 @@ class RouteEngine:
         total = 0.0
         for i in range(1, len(geometry)):
             total += self._haversine_distance(
-                geometry[i - 1][0], geometry[i - 1][1],
-                geometry[i][0], geometry[i][1],
+                geometry[i - 1][0],
+                geometry[i - 1][1],
+                geometry[i][0],
+                geometry[i][1],
             )
         return total
 
     async def _get_school(self, school_id: uuid.UUID) -> School | None:
-        result = await self.db.execute(
-            select(School).where(School.id == school_id)
-        )
+        result = await self.db.execute(select(School).where(School.id == school_id))
         return result.scalar_one_or_none()
 
     async def _get_nearby_danger_zones(
         self,
-        origin_lat: float, origin_lng: float,
-        dest_lat: float, dest_lng: float,
+        origin_lat: float,
+        origin_lng: float,
+        dest_lat: float,
+        dest_lng: float,
     ) -> list[RiskFactor]:
         """ルート周辺の危険エリアをPostGIS ST_DWithinで取得する"""
         # ルートの中心点から、ルート全長 + 1km のバッファで検索
         center_lat = (origin_lat + dest_lat) / 2
         center_lng = (origin_lng + dest_lng) / 2
-        route_distance = self._haversine_distance(origin_lat, origin_lng, dest_lat, dest_lng)
+        route_distance = self._haversine_distance(
+            origin_lat, origin_lng, dest_lat, dest_lng
+        )
         search_radius = (route_distance / 2) + 1000  # ルート半長 + 1km
 
         try:
             from app.services.spatial import get_danger_zones_within
+
             zones = await get_danger_zones_within(
                 self.db, center_lat, center_lng, search_radius
             )
@@ -503,8 +540,8 @@ class RouteEngine:
                     DangerZone.latitude <= max_lat,
                     DangerZone.longitude >= min_lng,
                     DangerZone.longitude <= max_lng,
-                    (DangerZone.expires_at == None) |
-                    (DangerZone.expires_at > datetime.now(timezone.utc)),
+                    (DangerZone.expires_at == None)
+                    | (DangerZone.expires_at > datetime.now(timezone.utc)),
                 )
             )
             zones = result.scalars().all()

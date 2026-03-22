@@ -14,6 +14,7 @@ from app.database import Base
 
 class LocationSource(str, PyEnum):
     """位置情報の取得元"""
+
     GPS_DEVICE = "gps_device"
     APP = "app"
     MANUAL = "manual"

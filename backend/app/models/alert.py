@@ -13,19 +13,21 @@ from app.database import Base
 
 class AlertType(str, PyEnum):
     """アラート種別"""
-    ROUTE_DEVIATION = "route_deviation"   # ルート逸脱
-    SPEED_ANOMALY = "speed_anomaly"       # 速度異常
-    ZONE_ENTRY = "zone_entry"             # 危険エリア侵入
-    SOS = "sos"                           # SOS
-    BATTERY_LOW = "battery_low"           # バッテリー低下
-    DEVICE_OFFLINE = "device_offline"     # デバイスオフライン
-    GEOFENCE_EXIT = "geofence_exit"       # ジオフェンス外出
-    ARRIVAL = "arrival"                   # 到着通知
-    DEPARTURE = "departure"              # 出発通知
+
+    ROUTE_DEVIATION = "route_deviation"  # ルート逸脱
+    SPEED_ANOMALY = "speed_anomaly"  # 速度異常
+    ZONE_ENTRY = "zone_entry"  # 危険エリア侵入
+    SOS = "sos"  # SOS
+    BATTERY_LOW = "battery_low"  # バッテリー低下
+    DEVICE_OFFLINE = "device_offline"  # デバイスオフライン
+    GEOFENCE_EXIT = "geofence_exit"  # ジオフェンス外出
+    ARRIVAL = "arrival"  # 到着通知
+    DEPARTURE = "departure"  # 出発通知
 
 
 class AlertSeverity(str, PyEnum):
     """アラート重要度"""
+
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"

@@ -29,7 +29,7 @@ async def search_schools(
 ):
     """学校名またはキーワードで小学校を検索する"""
     query = select(School).where(
-                or_(
+        or_(
             School.name.ilike(f"%{q}%"),
             School.address.ilike(f"%{q}%"),
             School.city.ilike(f"%{q}%"),
@@ -40,8 +40,8 @@ async def search_schools(
     if lat is not None and lng is not None:
         # PostgreSQLの簡易距離計算（度数ベース、近距離なら十分）
         distance = func.sqrt(
-            func.power(School.latitude - lat, 2) +
-            func.power((School.longitude - lng) * func.cos(func.radians(lat)), 2)
+            func.power(School.latitude - lat, 2)
+            + func.power((School.longitude - lng) * func.cos(func.radians(lat)), 2)
         )
         query = query.order_by(distance)
     else:
@@ -52,12 +52,16 @@ async def search_schools(
     schools = list(result.scalars().all())
 
     # 総件数
-    count_query = select(func.count()).select_from(School).where(
-                or_(
-            School.name.ilike(f"%{q}%"),
-            School.address.ilike(f"%{q}%"),
-            School.city.ilike(f"%{q}%"),
-        ),
+    count_query = (
+        select(func.count())
+        .select_from(School)
+        .where(
+            or_(
+                School.name.ilike(f"%{q}%"),
+                School.address.ilike(f"%{q}%"),
+                School.city.ilike(f"%{q}%"),
+            ),
+        )
     )
     count_result = await db.execute(count_query)
     total = count_result.scalar() or 0
@@ -82,15 +86,15 @@ async def nearby_schools(
     lng_range = radius / (111_000 * math.cos(math.radians(lat)))
 
     query = select(School).where(
-                School.latitude.isnot(None),
+        School.latitude.isnot(None),
         School.longitude.isnot(None),
         School.latitude.between(lat - lat_range, lat + lat_range),
         School.longitude.between(lng - lng_range, lng + lng_range),
     )
 
     distance = func.sqrt(
-        func.power(School.latitude - lat, 2) +
-        func.power((School.longitude - lng) * func.cos(func.radians(lat)), 2)
+        func.power(School.latitude - lat, 2)
+        + func.power((School.longitude - lng) * func.cos(func.radians(lat)), 2)
     )
     query = query.order_by(distance).limit(limit)
 

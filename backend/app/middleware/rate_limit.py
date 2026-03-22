@@ -16,6 +16,7 @@ _redis_client = None
 try:
     import redis.asyncio as aioredis
     from app.config import get_settings
+
     _settings = get_settings()
     if _settings.REDIS_URL:
         _redis_client = aioredis.from_url(
@@ -31,6 +32,7 @@ except Exception as e:
 @dataclass
 class RateBucket:
     """トークンバケット"""
+
     tokens: float
     last_refill: float
     max_tokens: float
@@ -59,11 +61,11 @@ class RateBucket:
 # エンドポイントグループ別のレート設定
 RATE_LIMITS = {
     # (max_tokens, refill_rate per second)
-    "default": (60, 1.0),       # 60 req/min
-    "auth": (10, 0.17),         # 10 req/min
-    "locations": (120, 2.0),    # 120 req/min（高頻度GPS送信対応）
-    "webhook": (200, 3.33),     # 200 req/min（デバイスWebhook）
-    "routes": (30, 0.5),        # 30 req/min
+    "default": (60, 1.0),  # 60 req/min
+    "auth": (10, 0.17),  # 10 req/min
+    "locations": (120, 2.0),  # 120 req/min（高頻度GPS送信対応）
+    "webhook": (200, 3.33),  # 200 req/min（デバイスWebhook）
+    "routes": (30, 0.5),  # 30 req/min
 }
 
 
@@ -117,14 +119,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return
         self._cleanup_counter = 0
         now = time.monotonic()
-        stale_keys = [
-            k for k, b in self._buckets.items()
-            if now - b.last_refill > 600
-        ]
+        stale_keys = [k for k, b in self._buckets.items() if now - b.last_refill > 600]
         for k in stale_keys:
             del self._buckets[k]
 
-    async def _check_redis_rate_limit(self, client_ip: str, rate_group: str) -> tuple[bool, float]:
+    async def _check_redis_rate_limit(
+        self, client_ip: str, rate_group: str
+    ) -> tuple[bool, float]:
         """Redisベースのスライディングウィンドウレートリミット"""
         max_tokens, _ = RATE_LIMITS.get(rate_group, RATE_LIMITS["default"])
         key = f"ratelimit:{rate_group}:{client_ip}"
@@ -147,7 +148,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 return False, window_seconds / max_tokens
             return True, 0.0
         except Exception as e:
-            logger.warning(f"Redis レートリミットエラー、インメモリにフォールバック: {e}")
+            logger.warning(
+                f"Redis レートリミットエラー、インメモリにフォールバック: {e}"
+            )
             return True, 0.0
 
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -160,7 +163,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Redis利用可能ならRedisベース、なければインメモリ
         if _redis_client:
-            allowed, retry_after = await self._check_redis_rate_limit(client_ip, rate_group)
+            allowed, retry_after = await self._check_redis_rate_limit(
+                client_ip, rate_group
+            )
         else:
             bucket = self._get_bucket(client_ip, rate_group)
             allowed = bucket.consume()

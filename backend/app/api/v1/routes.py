@@ -25,7 +25,8 @@ router = APIRouter()
 
 
 @router.get(
-    "/{child_id}/recommended", response_model=RouteResponse,
+    "/{child_id}/recommended",
+    response_model=RouteResponse,
     summary="推奨ルートを取得",
 )
 async def get_recommended_route(
@@ -39,9 +40,7 @@ async def get_recommended_route(
     """
     # 子どもの所有権確認
     result = await db.execute(
-        select(Child).where(
-            Child.id == child_id, Child.user_id == current_user.id
-        )
+        select(Child).where(Child.id == child_id, Child.user_id == current_user.id)
     )
     child = result.scalar_one_or_none()
     if child is None:
@@ -52,11 +51,14 @@ async def get_recommended_route(
 
     # 推奨ルートを検索
     route_result = await db.execute(
-        select(Route).where(
+        select(Route)
+        .where(
             Route.child_id == child_id,
             Route.is_recommended == True,
             Route.is_active == True,
-        ).order_by(Route.safety_score.desc()).limit(1)
+        )
+        .order_by(Route.safety_score.desc())
+        .limit(1)
     )
     route = route_result.scalar_one_or_none()
 
@@ -96,7 +98,9 @@ async def get_recommended_route(
         child_id=route.child_id,
         name=route.name,
         origin=RoutePoint(latitude=route.origin_lat, longitude=route.origin_lng),
-        destination=RoutePoint(latitude=route.destination_lat, longitude=route.destination_lng),
+        destination=RoutePoint(
+            latitude=route.destination_lat, longitude=route.destination_lng
+        ),
         waypoints=[RouteWaypoint(**wp) for wp in (route.waypoints_json or [])],
         distance_meters=route.distance_meters,
         estimated_duration_minutes=route.estimated_duration_minutes,
@@ -109,7 +113,8 @@ async def get_recommended_route(
 
 
 @router.get(
-    "/{child_id}", response_model=RouteListResponse,
+    "/{child_id}",
+    response_model=RouteListResponse,
     summary="ルート一覧取得",
 )
 async def list_routes(
@@ -119,9 +124,7 @@ async def list_routes(
 ):
     """子どもに紐づく全ルートを取得する"""
     result = await db.execute(
-        select(Child).where(
-            Child.id == child_id, Child.user_id == current_user.id
-        )
+        select(Child).where(Child.id == child_id, Child.user_id == current_user.id)
     )
     if result.scalar_one_or_none() is None:
         raise HTTPException(
@@ -130,29 +133,33 @@ async def list_routes(
         )
 
     routes_result = await db.execute(
-        select(Route).where(
-            Route.child_id == child_id, Route.is_active == True
-        ).order_by(Route.safety_score.desc())
+        select(Route)
+        .where(Route.child_id == child_id, Route.is_active == True)
+        .order_by(Route.safety_score.desc())
     )
     routes = routes_result.scalars().all()
 
     route_responses = []
     for r in routes:
-        route_responses.append(RouteResponse(
-            id=r.id,
-            child_id=r.child_id,
-            name=r.name,
-            origin=RoutePoint(latitude=r.origin_lat, longitude=r.origin_lng),
-            destination=RoutePoint(latitude=r.destination_lat, longitude=r.destination_lng),
-            waypoints=[RouteWaypoint(**wp) for wp in (r.waypoints_json or [])],
-            distance_meters=r.distance_meters,
-            estimated_duration_minutes=r.estimated_duration_minutes,
-            safety_score=r.safety_score,
-            is_recommended=r.is_recommended,
-            is_active=r.is_active,
-            created_at=r.created_at,
-            updated_at=r.updated_at,
-        ))
+        route_responses.append(
+            RouteResponse(
+                id=r.id,
+                child_id=r.child_id,
+                name=r.name,
+                origin=RoutePoint(latitude=r.origin_lat, longitude=r.origin_lng),
+                destination=RoutePoint(
+                    latitude=r.destination_lat, longitude=r.destination_lng
+                ),
+                waypoints=[RouteWaypoint(**wp) for wp in (r.waypoints_json or [])],
+                distance_meters=r.distance_meters,
+                estimated_duration_minutes=r.estimated_duration_minutes,
+                safety_score=r.safety_score,
+                is_recommended=r.is_recommended,
+                is_active=r.is_active,
+                created_at=r.created_at,
+                updated_at=r.updated_at,
+            )
+        )
 
     return RouteListResponse(
         routes=route_responses,
@@ -161,7 +168,8 @@ async def list_routes(
 
 
 @router.post(
-    "/calculate", response_model=RouteCalculateResponse,
+    "/calculate",
+    response_model=RouteCalculateResponse,
     summary="安全ルートを計算",
 )
 async def calculate_route(

@@ -4,7 +4,18 @@ import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, Integer, Float, Text, DateTime, Enum, ForeignKey, func, Column, text
+from sqlalchemy import (
+    String,
+    Integer,
+    Float,
+    Text,
+    DateTime,
+    Enum,
+    ForeignKey,
+    func,
+    Column,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from geoalchemy2 import Geometry
@@ -14,22 +25,24 @@ from app.database import Base
 
 class RiskType(str, PyEnum):
     """リスク種別"""
+
     SUSPICIOUS_PERSON = "suspicious_person"  # 不審者
-    TRAFFIC = "traffic"                       # 交通危険
-    CRIME = "crime"                           # 犯罪
-    DARK_AREA = "dark_area"                   # 暗い場所
-    CONSTRUCTION = "construction"             # 工事中
-    NATURAL_HAZARD = "natural_hazard"         # 自然災害リスク
-    OTHER = "other"                           # その他
+    TRAFFIC = "traffic"  # 交通危険
+    CRIME = "crime"  # 犯罪
+    DARK_AREA = "dark_area"  # 暗い場所
+    CONSTRUCTION = "construction"  # 工事中
+    NATURAL_HAZARD = "natural_hazard"  # 自然災害リスク
+    OTHER = "other"  # その他
 
 
 class DangerZoneSource(str, PyEnum):
     """情報源"""
-    POLICE = "police"               # 警察情報
-    COMMUNITY = "community"         # 地域住民からの報告
-    AI_ANALYSIS = "ai_analysis"     # AI分析
-    GOVERNMENT = "government"       # 行政情報
-    SCHOOL = "school"               # 学校からの情報
+
+    POLICE = "police"  # 警察情報
+    COMMUNITY = "community"  # 地域住民からの報告
+    AI_ANALYSIS = "ai_analysis"  # AI分析
+    GOVERNMENT = "government"  # 行政情報
+    SCHOOL = "school"  # 学校からの情報
 
 
 class DangerZone(Base):
@@ -72,9 +85,7 @@ class DangerZone(Base):
         DateTime(timezone=True), nullable=True, comment="有効期限"
     )
     is_active: Mapped[bool] = mapped_column(default=True)
-    verified: Mapped[bool] = mapped_column(
-        default=False, comment="確認済みかどうか"
-    )
+    verified: Mapped[bool] = mapped_column(default=False, comment="確認済みかどうか")
     confirm_count: Mapped[int] = mapped_column(
         Integer, default=0, server_default=text("0"), comment="確認数"
     )

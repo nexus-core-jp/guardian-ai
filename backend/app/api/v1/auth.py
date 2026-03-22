@@ -23,7 +23,12 @@ from app.schemas.user import (
     RefreshTokenRequest,
     RefreshTokenResponse,
 )
-from app.api.deps import create_access_token, create_refresh_token, verify_refresh_token, get_current_user
+from app.api.deps import (
+    create_access_token,
+    create_refresh_token,
+    verify_refresh_token,
+    get_current_user,
+)
 from app.services.route_engine import RouteEngine
 
 logger = logging.getLogger(__name__)
@@ -109,7 +114,9 @@ async def line_login(
     )
 
 
-@router.get("/line/callback", response_model=TokenResponse, summary="LINE OAuth コールバック")
+@router.get(
+    "/line/callback", response_model=TokenResponse, summary="LINE OAuth コールバック"
+)
 async def line_callback(
     code: str,
     state: str | None = None,
@@ -123,7 +130,9 @@ async def line_callback(
     return await line_login(request=request, db=db)
 
 
-@router.post("/onboarding", response_model=OnboardingResponse, summary="初期セットアップ")
+@router.post(
+    "/onboarding", response_model=OnboardingResponse, summary="初期セットアップ"
+)
 async def onboarding(
     request: OnboardingRequest,
     current_user: User = Depends(get_current_user),
@@ -384,7 +393,9 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user)
 
 
-@router.post("/refresh", response_model=RefreshTokenResponse, summary="トークンリフレッシュ")
+@router.post(
+    "/refresh", response_model=RefreshTokenResponse, summary="トークンリフレッシュ"
+)
 async def refresh_token(
     request: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db),

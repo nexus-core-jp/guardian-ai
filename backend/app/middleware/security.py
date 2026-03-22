@@ -22,7 +22,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
 
         # HTTPS環境ではHSTSを有効化
-        if request.url.scheme == "https" or request.headers.get("X-Forwarded-Proto") == "https":
+        if (
+            request.url.scheme == "https"
+            or request.headers.get("X-Forwarded-Proto") == "https"
+        ):
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains"
             )

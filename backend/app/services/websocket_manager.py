@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ConnectionInfo:
     """WebSocket接続情報"""
+
     websocket: WebSocket
     user_id: uuid.UUID
     child_ids: set[uuid.UUID] = field(default_factory=set)
@@ -90,11 +91,14 @@ class WebSocketManager:
         if not subscriber_ids:
             return
 
-        message = json.dumps({
-            "type": "location_update",
-            "child_id": str(child_id),
-            "data": location_data,
-        }, ensure_ascii=False)
+        message = json.dumps(
+            {
+                "type": "location_update",
+                "child_id": str(child_id),
+                "data": location_data,
+            },
+            ensure_ascii=False,
+        )
 
         disconnected = []
         for user_id in subscriber_ids:
@@ -122,10 +126,13 @@ class WebSocketManager:
         if conn is None:
             return
 
-        message = json.dumps({
-            "type": "alert",
-            "data": alert_data,
-        }, ensure_ascii=False)
+        message = json.dumps(
+            {
+                "type": "alert",
+                "data": alert_data,
+            },
+            ensure_ascii=False,
+        )
 
         try:
             await conn.websocket.send_text(message)

@@ -74,8 +74,8 @@ async def get_danger_zones_within(
     if active_only:
         query = query.where(
             DangerZone.is_active == True,
-            (DangerZone.expires_at == None) |
-            (DangerZone.expires_at > datetime.now(timezone.utc)),
+            (DangerZone.expires_at == None)
+            | (DangerZone.expires_at > datetime.now(timezone.utc)),
         )
 
     result = await db.execute(query)

@@ -108,6 +108,7 @@ class TestDangerZoneConfirm:
             longitude=139.76,
             risk_level=5,
             title="テスト危険エリア",
+            confirm_count=0,
         )
         assert zone.confirm_count == 0
 
