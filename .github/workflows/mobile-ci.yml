@@ -2,10 +2,10 @@ name: Mobile CI/CD
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths: ['mobile/**']
   pull_request:
-    branches: [master]
+    branches: [main]
     paths: ['mobile/**']
 
 jobs:
